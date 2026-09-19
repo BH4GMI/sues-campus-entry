@@ -141,7 +141,7 @@ pwsh -File ios/tools/make-app-icon.ps1
 | 跨文件签名 | 把每个调用点与实现签名逐项人工对齐 | `EntryHost` → `ScriptBag` 13 个调用点全中；`SliderDrag` / `SliderSolver` / `CredentialRepository` / `CredentialStore` / `EntrySettings` 全部对上 |
 | 滑块像素通道 | 比对解码侧与求解侧对同一 `Int32` 的位运算 | 解码 `(a<<24)\|(r<<16)\|(g<<8)\|b` ↔ 求解 `(p>>16)&0xFF` 等，**一致** |
 | 页面脚本占位符 | 从 `shared/js`、PC `ScriptBag.cs`、iOS `ScriptBag.swift` 三处分别抽取 `__XXX__` | 5 个占位符三端**完全一致** |
-| 页面脚本资源名 | iOS 的 12 个引用 ↔ `shared/js` 实际文件 ↔ PC csproj 的内嵌清单 | 12/12 一致，无缺无余 |
+| 页面脚本资源名 | iOS 的 13 个引用 ↔ `shared/js` 实际文件 ↔ PC csproj 的内嵌清单 | 13/13 一致，无缺无余 |
 | 等价用例规模 | 与 PC 的 `[Fact]` + `[InlineData]` 逐文件对照 | 13+23+8+4+7 = **55 个 func**；PC 同样是 55 个方法（含 `[Theory]` 的向量共 **64 条**） |
 | 工程文件结构 | 抽取全部 24 位 ID 与括号 | 29 个 ID 各恰好定义一次；括号平衡 |
 | 应用图标 | 生成后回读像素格式 | 1024×1024，`Format24bppRgb`，**无 alpha**（iOS 硬要求） |

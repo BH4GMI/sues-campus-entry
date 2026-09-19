@@ -2,7 +2,7 @@ import Foundation
 
 //  ScriptBag.swift —— 从 pc/src/CampusEntry/Core/ScriptBag.cs 逐条移植。
 //
-//  页面契约 JS 的唯一来源仍然是仓库根 `shared/js/`（12 个文件，与 Android 端同一批物理文件，
+//  页面契约 JS 的唯一来源仍然是仓库根 `shared/js/`（13 个文件，与 Android 端同一批物理文件，
 //  见 ios/project.yml：`../shared/js` 以 `type: folder` 进包）。这里只负责加载与填充占位符；
 //  改文件等于改三端的页面契约——先改 docs/CORE-SPEC.md 与 docs/PROTOCOL.md，再动文件。
 //
