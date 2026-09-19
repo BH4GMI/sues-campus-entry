@@ -963,7 +963,7 @@ public final class EntryHost: NSObject, WKScriptMessageHandler, WKNavigationDele
         if challenge.previousFailureCount == 0,
            let sender = challenge.sender,
            challenge.proposedCredential == nil {
-            sender.performDefaultHandling?(challenge)
+            sender.performDefaultHandling?(for: challenge)
         } else {
             challenge.sender?.cancel(challenge)
         }
