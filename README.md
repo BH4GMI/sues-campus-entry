@@ -24,7 +24,7 @@
 | --- | --- | --- | --- |
 | Windows | C# / .NET 8 / WPF / WebView2 | `pc/` | 已实现，真实链路实测通过，见 `pc/README.md` |
 | Android | Kotlin / Compose / WebView | `android/` | 已实现，单测 73 项、真机仪表测试 20 项通过 |
-| iOS | Swift / SwiftUI / WKWebView | `ios/` | 源码与 XCTest 用例齐备，**尚未编译**，见 `ios/README.md` |
+| iOS | Swift / SwiftUI / WKWebView | `ios/` | 已实现，编译与 55 项单测在 macOS runner 上通过；界面与真机链路未验证，见 `ios/README.md` |
 
 ## 仓库结构
 
@@ -100,23 +100,27 @@ adb shell am instrument -w app.webvpn.entry.test/androidx.test.runner.AndroidJUn
 
 ### iOS
 
-本机为 Windows，没有 Swift 工具链与 macOS，无法本地编译。编译与单测由
-`.github/workflows/ios.yml` 在 GitHub 托管的 macOS runner 上执行，分两步：
+本机为 Windows，没有 Swift 工具链与 macOS，无法本地编译，编译与单测全部在
+`.github/workflows/ios.yml` 中执行（GitHub 托管的 macOS runner，Xcode 26.6）。步骤依次为：
 
-1. 原样编译仓库内的 `CampusEntry.xcodeproj`（验证手写的工程文件本身可用）；
-2. 用 `xcodegen` 按 `project.yml` 重建工程后执行 `xcodebuild test`（`project.yml` 是工程结构
-   的唯一事实来源，两者不一致时以它为准）。
+1. `swiftc -typecheck` 对全部源文件做一次类型检查——`xcodebuild` 在第一条编译错误之后就会取消
+   其余任务，这一层用于一次拿到完整错误清单；
+2. 原样编译仓库内的 `CampusEntry.xcodeproj`，验证手写的工程文件本身可用；
+3. 用 `xcodegen` 按 `project.yml` 就地重建工程，再执行 `xcodebuild test`。
+   `project.yml` 是工程结构的唯一事实来源，两者不一致时以它为准。
 
-首次在 Mac 上的手动步骤与 11 项待确认点见 `ios/README.md`。
+截至 2026-09-19，上述四步全部通过，55 项 XCTest 全绿。**编译与单测通过不等于交付完成**：
+SwiftUI 界面、`WKWebView` 宿主行为与真机链路都还没有运行过，`docs/APP-UX.md` §9 的场景 1–10
+在 iOS 上仍为未验证。待确认项与首次在 Mac 上的手动步骤见 `ios/README.md`。
 
 ## 测试覆盖的分层
 
 | 层 | Windows | Android | iOS |
 | --- | --- | --- | --- |
-| 判据与状态机（`Sues` / `EntryFlow`） | 单测 70 项 | 单测 73 项 | 用例已写，未运行 |
-| 页面脚本的 DOM 层（`shared/js`） | 经宿主层用例间接覆盖 | 真机 WebView 8 项（含 `<div>` / `<br>` / `&amp;` 向量） | 未运行 |
+| 判据与状态机（`Sues` / `EntryFlow`） | 单测 70 项 | 单测 73 项 | 单测 55 项通过（模拟器） |
+| 页面脚本的 DOM 层（`shared/js`） | 经宿主层用例间接覆盖 | 真机 WebView 8 项（含 `<div>` / `<br>` / `&amp;` 向量） | 无 DOM 用例；两条用例直接读取同一批脚本文件 |
 | 宿主层接线（`EntryHost`） | 真机 WebView2 4 项 | 真机 WebView 4 项 | 未覆盖 |
-| 平台存储（DPAPI / AndroidKeyStore / Keychain） | 单测 | 真机 8 项 | 未运行 |
+| 平台存储（DPAPI / AndroidKeyStore / Keychain） | 单测 | 真机 8 项 | 未覆盖（凭据测试用假后端，Keychain 后端只编译过） |
 
 宿主层用例测的是「判据有没有被接上」，而不是判据本身——判据与状态机全对、只有接线错时，
 单测抓不到。两端的宿主层用例都做过红测：短路对应的闸门后，用例当场失败。
@@ -130,5 +134,6 @@ Windows 宿主层用例的运行约束：WebView2 需要 STA 线程与消息泵�
 
 - 本仓库只做「打开系统」这一件事。课表导入（`get-data` / `.wakeup_schedule`）属于其它项目，
   不在范围内。
-- iOS 端尚未编译，其「与另外两端逻辑一致」目前来自源码与用例的对齐，不是运行结果比对。
+- iOS 端已能编译、55 项逻辑单测通过，但界面与真机链路从未运行；其「与另外两端逻辑一致」目前
+  来自源码与用例的对齐及这批单测，不是端到端运行结果的比对。
 - 会话均为会话级 cookie，冷启动必然重新认证一次；这是学校站点的行为，不是本应用的缓存策略。
