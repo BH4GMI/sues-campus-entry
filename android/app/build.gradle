@@ -13,7 +13,7 @@ android {
         minSdk 24
         targetSdk 34
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         // 密钥库路径只有真机/模拟器上才存在，必须在设备上验证
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

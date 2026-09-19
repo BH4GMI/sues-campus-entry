@@ -20,6 +20,11 @@
     <AssemblyTitle>教务直达</AssemblyTitle>
     <Description>教务系统与 WebVPN 的桌面快捷入口</Description>
     <Company>个人项目</Company>
+    <!--
+      发布版本号。Windows 端只有这一处声明版本（文件属性里的「产品版本/文件版本」由它派生）；
+      Android 端对应 android/app/build.gradle 的 versionName。发版时两边一起对齐。
+    -->
+    <Version>1.0.0</Version>
     <!-- PerMonitorV2 DPI 感知：没有这份清单时进程只有 SYSTEM_AWARE，跨显示器会整窗发虚 -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 应用图标由 pc/tools/make-app-icon.ps1 生成，脚本才是唯一事实来源 -->
