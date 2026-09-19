@@ -26,7 +26,7 @@
 /* Begin PBXFileReference section */
 		CE0000000000000000000007 /* CampusEntry.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CampusEntry.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE0000000000000000000008 /* CampusEntryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CampusEntryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		CE00000000000000000000B1 /* shared/js */ = {isa = PBXFileReference; lastKnownFileType = folder; name = js; path = "../../shared/js"; sourceTree = "<group>"; };
+		CE00000000000000000000B1 /* shared/js */ = {isa = PBXFileReference; lastKnownFileType = folder; name = js; path = "../shared/js"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
