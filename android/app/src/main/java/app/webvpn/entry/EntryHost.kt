@@ -111,8 +111,7 @@ class Tab(val id: Int, var web: WebView) {
      *
      * `onPageStarted` 对同一串导航可能重复回调（表单重投、服务端重定向、分片导航），
      * 而文档序号是 [filledDoc] / [tweakedDoc] 的文档身份。由 `onPageFinished` /
-     * `onReceivedError` 复位；PC 用 `NavigationStarting.IsRedirected`、iOS 用同名的
-     * `documentCounted`，三端等价。
+     * `onReceivedError` 复位；PC 用 `NavigationStarting.IsRedirected`，两端等价。
      */
     var documentCounted = false
 
@@ -124,8 +123,8 @@ class Tab(val id: Int, var web: WebView) {
      * （状态机据此正确走进了认证页分支），而 `webView.getUrl()` 返回的是 `about:blank`。
      * 于是 `assistCas` 的 §6.1 主机闸会**把一页合法的认证页挡在门外**（表现就是「自动登录静默失效」）。
      * 真实 https 页面上两者一般相等，所以这个坑只在特定装载方式/重定向窗口里露出来——恰恰最难查。
-     * PC 与 iOS 用的是各自的「当前源」（`CoreWebView2.Source` / `WKWebView.url`），
-     * 这一份把「文档 URL」这件事变成**一个来源**，三端的语义就统一了。
+     * PC 用的是「当前源」（`CoreWebView2.Source`），
+     * 这一份把「文档 URL」这件事变成**一个来源**，两端的语义就统一了。
      */
     var documentUrl: String = ""
 }
@@ -188,7 +187,7 @@ class EntryHost(
         // 页面契约 JS 打在 assets 里（来源是仓库根 shared/js）；JVM 单测会换成源码树来源
         PageJs.prepare(context.assets)
         // 密钥库解密 + 读盘不占界面线程（这个构造发生在 onCreate 里）：
-        // 「界面线程不做 IO / 密钥库调用」是三端一致的规则，PC 用 Task.Run、iOS 用 detached task。
+        // 「界面线程不做 IO / 密钥库调用」是两端一致的规则，PC 用 Task.Run。
         thread(name = "cred-load") {
             val name = repository.savedUsername()
             main.post { if (name != null) savedUsername = name }
@@ -573,7 +572,7 @@ class EntryHost(
             // 而**文档序号**是 filledDoc / tweakedDoc 的「文档身份」：多记一次会让
             // 「这份文档我已经填过」失效，白耗一次自动提交额度。
             // 用「一串导航只记一次」把它钉死，由 onPageFinished / onReceivedError 复位——
-            // 与 PC 的 `!e.IsRedirected`、iOS 的 `documentCounted` 是同一件事。
+            // 与 PC 的 `!e.IsRedirected` 是同一件事。
             tab.documentUrl = url
             if (!tab.documentCounted) {
                 tab.documentCounted = true
@@ -616,7 +615,7 @@ class EntryHost(
          *
          * 平台契约：返回 `false`（默认）系统会**杀掉整个应用进程**；要自己处置就必须返回 `true`，
          * 并且此后不能再使用这个 WebView 实例。所以这里重建它（见 [rebuildWebView]）。
-         * PC 的 `ProcessFailed`、iOS 的 `webViewWebContentProcessDidTerminate` 是同一件事。
+         * PC 的 `ProcessFailed` 是同一件事。
          *
          * 注：这个回调与 `RenderProcessGoneDetail` 都是 API 26 起才有，minSdk 24 的设备上不会被调用。
          */
@@ -885,7 +884,7 @@ class EntryHost(
         cancelPending(tab)
         if (pending != null) {
             // 加密（KeyStore）+ 同步落盘（commit）挪到后台线程，结果回主线程再更新界面状态：
-            // 界面线程不做 IO / 密钥库调用（PC 用 Task.Run、iOS 用 detached task）。
+            // 界面线程不做 IO / 密钥库调用（PC 用 Task.Run）。
             thread(name = "cred-save-${tab.id}") {
                 val saved = try {
                     repository.save(pending.username, pending.password)
@@ -1015,7 +1014,7 @@ class EntryHost(
         }
         thread(name = "slider-${tab.id}") {
             // 两张位图必须**成对**回收：解码第二张失败、或求解抛异常时，第一张也不能漏
-            //（PC 用 try/finally、iOS 用 defer，这里是同一件事）。
+            //（PC 用 try/finally，这里是同一件事）。
             var bg: Bitmap? = null
             var sl: Bitmap? = null
             val x: Int? = try {

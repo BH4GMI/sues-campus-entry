@@ -2,14 +2,9 @@
 bin/
 obj/
 dist/
-DerivedData/
-*.xcuserdatad/
-xcuserdata/
 .gradle/
 .kotlin/
 build/
-*.ipa
-*.xcarchive
 local.properties
 
 # 编辑器与本机状态
@@ -26,7 +21,6 @@ local.properties
 *.jks
 *.p12
 *.pfx
-*.mobileprovision
 secrets/
 
 # 本机素材：非构建内容

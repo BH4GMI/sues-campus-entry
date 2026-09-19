@@ -3,7 +3,7 @@ package app.webvpn.entry
 /**
  * 打开校内两个系统所需的全部判断，**纯逻辑、不依赖 Android**。
  *
- * 这样三端可以逐条对齐（`docs/PROTOCOL.md` 是同一份事实），也便于在 JVM 上直接单测。
+ * 这样两端可以逐条对齐（`docs/PROTOCOL.md` 是同一份事实），也便于在 JVM 上直接单测。
  * 这里不碰任何凭据本身：只认地址形状、页面身份与服务端给的提示文本。
  */
 object Sues {

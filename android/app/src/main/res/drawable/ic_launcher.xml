@@ -1,7 +1,7 @@
 <!--
     应用图标（Android）。
 
-    图形与 pc/tools/make-app-icon.ps1、ios/tools/make-app-icon.ps1 是**同一个标记**：
+    图形与 pc/tools/make-app-icon.ps1 是**同一个标记**：
     白色描边（不填充）的折角纸。刻意不含校徽、校名、印章——这是个人做的快捷入口，
     不能看着像学校官方应用。
 
@@ -9,9 +9,8 @@
       - Windows 直接把图片画到桌面/任务栏，所以自己做完整外形（圆形满底）；
       - Android 由启动器给图标施加外形遮罩，所以这里画**满幅方形**，
         自己再画圆角或圆形会得到"圆套圆"的脏边。
-    iOS 同理，见 ios/tools/make-app-icon.ps1（那条还多一个"不许有 alpha"的硬要求）。
 
-    描边 3 对应 48 视口的 0.0625，与 PC/iOS 的描边比例一致；线帽与拐角都是圆头。
+    描边 3 对应 48 视口的 0.0625，与 PC 的描边比例一致；线帽与拐角都是圆头。
     内部两条文字线保留：48dp 大于 PC 端触发光学简化的阈值（20px）。
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"

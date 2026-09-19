@@ -128,7 +128,7 @@
                         状态行的可点动作（APP-UX §5 状态文案表的「是否可点」列）：
                         断网 → 「重试」、保存成功 → 「撤销」。没有动作时整块塌陷，不占位。
                         **这块是必须的**：`EntryHost.OnNoticeAction()` 之前一个调用者都没有，
-                        于是「重试 / 撤销」在 PC 上根本点不到——安卓与 iOS 两端都有这个按钮。
+                        于是「重试 / 撤销」在 PC 上根本点不到——安卓端一直有这个按钮。
                         停靠顺序决定左右：设置最右，动作按钮次之，状态文字在它左边。
                     -->
                     <Button x:Name="NoticeActionButton" DockPanel.Dock="Right" VerticalAlignment="Center"

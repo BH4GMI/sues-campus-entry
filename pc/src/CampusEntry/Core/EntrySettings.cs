@@ -27,7 +27,7 @@ public sealed class EntrySettings
     /// <b>这是持久化键，不是显示名</b>：目录名里的 <c>CampusEntry</c> 与产品显示名「教务直达」无关，
     /// 改名时**绝不能**跟着改——一旦改了，用户机器上已保存的账号与偏好会全部读不到
     /// （表现是"突然要我重新登录"，看起来像登录坏了，实际是数据被另起炉灶）。
-    /// 同一原则适用于 Android 的 SharedPreferences 文件名与 iOS 的 Keychain service。
+    /// 同一原则适用于 Android 的 SharedPreferences 文件名。
     /// </para>
     /// </summary>
     public static string DirectoryPath =>
@@ -38,7 +38,7 @@ public sealed class EntrySettings
     /// <para>
     /// 存在的唯一理由：**宿主层测试**要能装配真宿主而不覆盖用户真实的 <c>entry.json</c>。
     /// <see cref="Save"/> 是宿主会主动调用的（清前缀、切换保存意愿），所以只靠"测试不去调 Save"是防不住的。
-    /// 三端同一原则：Android 用测试独立的 SharedPreferences 名、iOS 用测试独立的 Keychain 别名。
+    /// 两端同一原则：Android 用测试独立的 SharedPreferences 名。
     /// </para>
     /// </summary>
     public string? DataDirectory { get; init; }

@@ -3,14 +3,14 @@ package app.webvpn.entry
 import android.content.res.AssetManager
 
 /**
- * 注入页面的几段 JS。**正文只有一份来源：仓库根下的 `shared/js/`**（三端共用，PC 端打包的是
+ * 注入页面的几段 JS。**正文只有一份来源：仓库根下的 `shared/js/`**（两端共用，PC 端打包的是
  * 同一批文件），这里只负责加载与填充占位符。
  *
  * 全部来自实测页面（见 `docs/PROTOCOL.md`），只做两类事：回报**观察到**的页面状态，以及执行
  * 不涉及凭据的小动作（勾「记住我」、把滑块拖过去）。
  *
  * 判断一律留在 Kotlin 一侧（`Sues`）：标记表只有一份，也能被单测覆盖，不必在 JS 里再写一套。
- * 改这些文件等于改三端的页面契约——先改 `docs/CORE-SPEC.md` 与 `docs/PROTOCOL.md`，再动文件。
+ * 改这些文件等于改两端的页面契约——先改 `docs/CORE-SPEC.md` 与 `docs/PROTOCOL.md`，再动文件。
  */
 object PageJs {
 

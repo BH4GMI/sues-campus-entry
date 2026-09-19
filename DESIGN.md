@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: 教务直达
-description: 教务直达（Android / PC / iOS 三端）的设计系统。安静的墨蓝、克制的层级、一句话说得清的状态。
+description: 教务直达（Android / PC 两端）的设计系统。安静的墨蓝、克制的层级、一句话说得清的状态。
 colors:
   primary: "#2F6FB5"
   primary-deep: "#24548A"
@@ -221,7 +221,7 @@ components:
 | 标识名 | **CampusEntry** | exe 文件名、命名空间、程序集名、资源逻辑名、数据目录 |
 | 协议前缀 | **campus-entry** | 注入脚本与宿主之间的日志前缀（见下） |
 
-**持久化键永远不跟着显示名改。** 改 `%LOCALAPPDATA%\CampusEntry\` 或 iOS 的 Keychain 服务名，用户机器上已保存的账号就读不到了，他们看到的是"突然要我重新登录"——像登录坏了，实际是数据被另起炉灶。所以改名只动显示层。三端各自的位置写在 `EntrySettings.cs`、`MainActivity.kt`、`KeychainCryptoBackend.swift` 的注释里。
+**持久化键永远不跟着显示名改。** 改 `%LOCALAPPDATA%\CampusEntry\`，用户机器上已保存的账号就读不到了，他们看到的是"突然要我重新登录"——像登录坏了，实际是数据被另起炉灶。所以改名只动显示层。两端各自的位置写在 `EntrySettings.cs`、`MainActivity.kt` 的注释里。
 
 **协议字符串同理。** `shared/js/notice-dialog.js` 的 `LOG` 前缀与 Android `EntryHost.onConsoleMessage` 的前缀判据必须**逐字一致**，它是一条跨端契约，不是文案。
 
@@ -231,9 +231,9 @@ components:
 
 白色描边（**不填充**）的**折角纸**，配品牌蓝底板。2026-09 由「门洞 + 圆角方底 + 实心几何」改为本方案。
 
-- **标记几何三端一致，只有底板形状按平台惯例不同。** Windows 自己画完整外形（**圆形满底**——系统不会给窗口图标加遮罩）；Android 与 iOS 画**满幅方形**，外形遮罩由系统施加（自己再画圆角会得到"圆套圆"的脏边）。
+- **标记几何两端一致，只有底板形状按平台惯例不同。** Windows 自己画完整外形（**圆形满底**——系统不会给窗口图标加遮罩）；Android 画**满幅方形**，外形遮罩由系统施加（自己再画圆角会得到"圆套圆"的脏边）。
 - **对比度**：白色描边对 `#2F6FB5` 是 **5.2:1**，高于 WCAG 对图形元素要求的 3:1。曾评估参照图的薄荷绿 `#54CAB2`，只有 **2.0:1**，未采用；同色相加深到 `#2AA089` 可得 3.2:1，留作备选。
-- **小尺寸做光学简化，不是等比缩小**：≤ 20px 时纸面撑大、内部两条文字线去掉——1px 的线挤进 8px 宽的纸面只会糊成一团。阈值写在 `pc/tools/make-app-icon.ps1` 里，三端同源。
+- **小尺寸做光学简化，不是等比缩小**：≤ 20px 时纸面撑大、内部两条文字线去掉——1px 的线挤进 8px 宽的纸面只会糊成一团。阈值写在 `pc/tools/make-app-icon.ps1` 里，两端同源。
 
 ## Colors
 
@@ -248,7 +248,7 @@ components:
 
 ## Typography
 
-字体一律用**系统默认字体**（`system-ui`）：Android 落到 `FontFamily.Default`（Roboto / 思源黑体），Windows 落到 Segoe UI，iOS 落到 SF Pro。中英混排由系统字体保证，**不打包任何自定义字体**——省体积，也避免中文回退到错误的字重。
+字体一律用**系统默认字体**（`system-ui`）：Android 落到 `FontFamily.Default`（Roboto / 思源黑体），Windows 落到 Segoe UI。中英混排由系统字体保证，**不打包任何自定义字体**——省体积，也避免中文回退到错误的字重。
 
 层级只保留三档，对应三种角色：
 
@@ -261,11 +261,10 @@ components:
 
 ## Layout
 
-本设计系统面向三端，`px` 数值的落地映射为：
+本设计系统面向两端，`px` 数值的落地映射为：
 
 - Android / Jetpack Compose：`spacing` 与 `rounded` 的 `px` → **dp**（`20px` → `20.dp`）；`typography.fontSize` 的 `px` → **sp**（`16px` → `16.sp`）；`lineHeight` 的无单位倍数 → `.em`。
 - Windows / WPF：`spacing` 与 `rounded` 的 `px` → **DIP**（`16px` → `16`，WPF 无单位即设备无关像素）；**但 `typography.fontSize` 不得直接沿用**，必须换用下方「落到 PC 时」那一档桌面字号。
-- iOS / SwiftUI：`px` → **pt**（`16px` → `16.pt`），字号**同样**不复用手机档，另按 iOS 平台惯例定。
 - 间距走 **4px 基准的 8px 节奏**（4 / 8 / 12 / 16 / 20 / 24 / 32）。
 - 页面左右安全边距统一 `spacing.2xl` (24px)；卡片内部 `spacing.xl` (20px)。
 - **触控目标不小于 `spacing.touch` (48px)**，视觉尺寸可以更小，但可点区域必须补足。
@@ -374,15 +373,4 @@ PC 端是**桌面窗口**，不是手机界面放大，也不是把手机界面�
 
 每个图标按钮必须有 `AutomationProperties.Name`；"当前入口"用 `RadioButton`（互斥语义）而不是手工换色的 `Button`，读屏才会正确播报。
 
-## 落到 iOS 时本文件表达不了的语义
 
-iOS 与 Android 同属**手机形态**，所以 `typography` 那一档可以照用（与 PC 相反）；不同的只是平台机制。
-
-- **单位**：`px` → **pt**（`16px` → `16.pt`），字号沿用手机档（`titleMedium 16` / `bodyMedium 14` / `bodySmall 12` / `labelMedium 12` / `labelSmall 11`），**不要**套用 PC 那套桌面字号。
-- **字体**：系统默认（SF Pro / 苹方），**不打包自定义字体**——与 Android 同样的理由。
-- **深色模式**：本文件只给了浅色 token，深色取值取 **Android 端 `Theme.kt` 的 `DarkColors`**（`primary #5B9BD5`、背景 `#121417`、面 `#1B1E22`、墨 `#E8EAED`、次要 `#A2A9B0`、线 `#2C3136`、成功 `#6FBF95`、警告 `#E0A85C`、错误 `#F2B8B5`），落地在 `ios/CampusEntry/App/Theme.swift`。**不要只做浅色**——那会在深色系统下变成一片刺眼的白。唯一例外：Android 没有定义深色下的 `primary-deep`（它只作按下态用），iOS 侧按下态是从 `primary` 派生的，已在代码里标注。
-- **图标**：用 **SF Symbols**（`Image(systemName:)`）。它就是 iOS 的原生图标来源，地位对应 Windows 的 `Segoe Fluent Icons`、Android 的 Material Symbols。**不要**用 emoji 或普通文字充当图标。
-- **触控目标**：`spacing.touch` (48) 在 iOS 上**适用**（iOS 也是触屏），与 Android 同一条约束。
-- **底栏**：48pt，图标与标签同排；状态胶囊贴在底栏正上方——与 Android 完全一致。
-- **应用图标**：**满幅正方形、不画圆角、不能有 alpha**（圆角与遮罩由系统施加；带透明会被 Xcode 与 App Store 拒绝）。现代 Xcode 只需一张 1024×1024，由 `ios/tools/make-app-icon.ps1` 生成。底板形状与 Windows 不同是刻意的，理由见上面「应用标记」一节。
-- **无障碍**：每个图标按钮要有 `accessibilityLabel`；"当前入口"要能被读屏正确播报；破坏性动作必须走系统确认弹窗（`.alert` + `role: .destructive`）。

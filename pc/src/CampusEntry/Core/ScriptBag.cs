@@ -6,7 +6,7 @@ namespace CampusEntry.Core;
 
 /// <summary>
 /// 页面契约 JS 的唯一来源：仓库根 <c>shared/js/</c>（与 Android 端同一批文件，链接成本工程内嵌资源）。
-/// 这里只负责加载与填充占位符；改文件等于改三端的页面契约——先改 docs 再动文件。
+/// 这里只负责加载与填充占位符；改文件等于改两端的页面契约——先改 docs 再动文件。
 /// </summary>
 public static class ScriptBag
 {

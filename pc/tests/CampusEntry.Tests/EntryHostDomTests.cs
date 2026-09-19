@@ -9,8 +9,8 @@ using Xunit;
 namespace CampusEntry.Tests;
 
 /// <summary>
-/// PC 端**宿主层**测试（2026-09 审计的 A9：这一层原先三端零覆盖；Android 侧的对应物是
-/// `EntryHostDomTest`，iOS 侧没有——本机没有 macOS）。
+/// PC 端**宿主层**测试（2026-09 审计的 A9：这一层原先两端零覆盖；Android 侧的对应物是
+/// `EntryHostDomTest`）。
 ///
 /// 测的不是判据对不对（那是 `SuesTests` / `EntryFlowTests` 的事），而是**判据有没有被接上**：
 /// 导航回调 → 状态机 → 宿主效果（状态行、自动填写）。Android 侧就是靠这一层查出两个真实缺陷

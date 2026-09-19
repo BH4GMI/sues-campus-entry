@@ -15,7 +15,6 @@ gradlew  text eol=lf
 *.kt       text eol=lf
 *.kts      text eol=lf
 *.gradle   text eol=lf
-*.swift    text eol=lf
 *.js       text eol=lf
 *.mjs      text eol=lf
 *.json     text eol=lf
@@ -24,7 +23,6 @@ gradlew  text eol=lf
 *.yaml     text eol=lf
 *.xml      text eol=lf
 *.ps1      text eol=lf
-*.pbxproj  text eol=lf
 *.properties text eol=lf
 
 # 二进制，不做任何转换

@@ -171,7 +171,7 @@ public sealed class EntryHost : IDisposable
                     //   · Core.Source 还停在旧文档 → 走「用缓存前缀直打却落到不认识的页面」→ **删掉已存前缀**，
                     //     并告诉用户「入口地址已失效」——真正的故障是网络；
                     //   · 失败目标本身是 /https/<hex>/student/… 时，地址形状照样命中 → 谎报「已进入教务系统」。
-                    // Android 的 onReceivedError、iOS 的 didFail* 都拦在这一层，PC 之前漏了。
+                    // Android 的 onReceivedError 就拦在这一层，PC 之前漏了。
                     Log($"onNavigationCompleted 失败：{url}（{e.WebErrorStatus}）");
                     Alert("网络不通，请检查后重试", NoticeKind.Retry);
                     return;
@@ -192,8 +192,8 @@ public sealed class EntryHost : IDisposable
         Core.ServerCertificateErrorDetected += (_, e) =>
         {
             // 登录凭据不能经过证书无效的连接：**一律取消，且不提供绕过入口**。
-            // Android 的 `onReceivedSslError`（handler.cancel()）、iOS 的 `didReceive challenge`
-            // 是同一件事——APP-UX §5 的「证书」行三端都要成立。
+            // Android 的 `onReceivedSslError`（handler.cancel()）是同一件事——
+            // APP-UX §5 的「证书」行两端都要成立。
             Log($"证书校验失败，已取消：{e.RequestUri}（{e.ErrorStatus}）");
             e.Action = Microsoft.Web.WebView2.Core.CoreWebView2ServerCertificateErrorAction.Cancel;
             Alert("证书校验失败，已停止连接");
@@ -214,7 +214,7 @@ public sealed class EntryHost : IDisposable
         {
             // 网页进程（渲染进程）被系统回收：整页变白，而且**不会**来 NavigationCompleted——
             // 状态机会以为还停在原来那份文档上（停手标志、文档序号全保持旧值），界面也没有任何出口。
-            // Android 的 onRenderProcessGone、iOS 的 webViewWebContentProcessDidTerminate 是同一件事。
+            // Android 的 onRenderProcessGone 是同一件事。
             Log($"WebView2 进程失败：{e.ProcessFailedKind}（{e.Reason}）");
             try
             {
@@ -491,7 +491,7 @@ public sealed class EntryHost : IDisposable
             ShowNotice(new NoticeState { Text = "自动登录没有成功，请手动登录", Sticky = true });
             return;
         }
-        // 解密（DPAPI）不占界面线程：这是三端一致的规则（Android 用后台线程 + 回主线程，iOS 用 detached task）
+        // 解密（DPAPI）不占界面线程：这是两端一致的规则（Android 用后台线程 + 回主线程）
         using var credential = await Task.Run(() => repository.Load());
         if (credential == null)
         {
@@ -586,7 +586,7 @@ public sealed class EntryHost : IDisposable
             ShowNotice(new NoticeState { Text = "已进入教务系统", Tone = NoticeState.ToneKind.Done });
             return;
         }
-        // 加解密 + 落盘挪到线程池：界面线程不做 IO（三端一致的规则）
+        // 加解密 + 落盘挪到线程池：界面线程不做 IO（两端一致的规则）
         Guarded("保存账号", "账号没能保存，请重试", async () =>
         {
             bool saved;
@@ -886,8 +886,8 @@ public sealed class EntryHost : IDisposable
     /// <remarks>
     /// 为什么必须有它：这些动作全部由 WebView2 的回调直接触发（导航完成、页面消息），而回调是
     /// <c>async void</c>——里面的异常会直接冒到 Dispatcher 的未处理异常上，**一次网络抖动或
-    /// WebView2 被销毁就能终止整个进程**。Android 各回调里的 try/catch、iOS <c>eval</c> 里的 catch
-    /// 是同一件事；这里是 PC 侧的对应物，只是集中在一处，不在每个入口重复写。
+    /// WebView2 被销毁就能终止整个进程**。Android 各回调里的 try/catch 是同一件事；
+    /// 这里是 PC 侧的对应物，只是集中在一处，不在每个入口重复写。
     /// </remarks>
     private async void Guarded(string what, string userText, Func<Task> action)
     {
