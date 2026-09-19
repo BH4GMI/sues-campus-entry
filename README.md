@@ -27,6 +27,7 @@
 ## 仓库结构
 
 ```
+LICENSE      MIT 许可全文
 shared/js/   两端共用的页面契约脚本（物理上只有这一份）
 docs/        跨端契约与实测记录
 DESIGN.md    两端视觉 token 的唯一来源
@@ -116,3 +117,7 @@ Windows 宿主层用例的运行约束：WebView2 需要 STA 线程与消息泵�
 - 本仓库只做「打开系统」这一件事。课表导入（`get-data` / `.wakeup_schedule`）属于其它项目，
   不在范围内。
 - 会话均为会话级 cookie，冷启动必然重新认证一次；这是学校站点的行为，不是本应用的缓存策略。
+
+## 许可
+
+本项目以 **MIT License** 发布，全文见 [`LICENSE`](LICENSE)。
