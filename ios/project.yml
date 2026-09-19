@@ -53,6 +53,15 @@ targets:
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        # iPad 放开四个方向：平板横屏是常态。手写的 .xcodeproj 里本来就声明了这一行，
+        # project.yml 漏了它——而工程由 project.yml 就地重建，漏掉的后果是归档产物的
+        # Info.plist 里没有 ~ipad 方向键，只剩系统隐式默认值。
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        # 手写的 .xcodeproj 里另有 UIStatusBarStyle = UIStatusBarStyleDefault 与
+        # SWIFT_EMIT_LOC_STRINGS = YES 两项，这里不重复声明：前者等于系统默认值，后者只影响
+        # DerivedData 里的字符串提取、不进包（归档产物的 22 个条目里没有 .lproj）；
+        # TEST_HOST / BUNDLE_LOADER / LD_RUNPATH_SEARCH_PATHS 由 XcodeGen 按 target 类型自动生成。
+        # 因此除上面那行 iPad 方向外，两个文件之间没有别的有行为差异的设置。
 
   CampusEntryTests:
     type: bundle.unit-test

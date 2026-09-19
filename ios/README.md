@@ -153,6 +153,8 @@ pwsh -File ios/tools/make-app-icon.ps1
 
 - 单 `WKWebView`，站点的 `window.open` / `target=_blank` 在当前视图打开（保住返回栈）。
 - 账号入口是底部栏第三项，打开为 sheet（对应 Android 的抽屉）；设置项同 Android。
+- **方向**：iPhone 只允许竖屏（`UISupportedInterfaceOrientations~iphone` 仅含 Portrait），
+  iPad 四个方向都允许（平板横屏是常态）。
 
 ## 编译前做过的检查
 
