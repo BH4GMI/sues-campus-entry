@@ -33,6 +33,20 @@ jobs:
           sudo xcode-select -s "$NEWEST"
           xcodebuild -version
 
+      # 一次报出全部编译错误：xcodebuild 在第一个失败的编译任务之后会取消其余任务，
+      # 每轮只能看到第一条错误。这一层用 swiftc 直接对全部源文件做类型检查，把反馈周期
+      # 从「每轮一条」压到「每轮一批」。
+      - name: 类型检查（一次报出全部错误）
+        run: |
+          set -x
+          SDK="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          xcrun --sdk iphonesimulator swiftc -typecheck \
+            -target arm64-apple-ios17.0-simulator \
+            -sdk "$SDK" \
+            -swift-version 5 \
+            -D DEBUG \
+            $(find CampusEntry -name '*.swift' -print)
+
       # 第一步：原样编译仓库内手写的工程文件，验证它本身能被 Xcode 打开并构建。
       # 必须用 -scheme：-derivedDataPath 与 -target 不能同时使用（xcodebuild 直接报错码 64）。
       - name: 工程自检与编译（仓库内工程）

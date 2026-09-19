@@ -197,7 +197,6 @@ public final class EntryHost: NSObject, WKScriptMessageHandler, WKNavigationDele
         // Keychain 解密读一次：**不占主 actor**（构造发生在 App 启动路径上）。
         // 读完刷新界面；读不出来等价于「没存过」，只记日志。
         savedUsername = nil
-        loadSavedUsername()
         home = !settings.saveDecided
 
         let contentController = configuration.userContentController
@@ -213,6 +212,11 @@ public final class EntryHost: NSObject, WKScriptMessageHandler, WKNavigationDele
         webView = WKWebView(frame: .zero, configuration: configuration)
 
         super.init()
+
+        // 「已保存的账号」必须在 `super.init()` 之后再读：这个读取本身是异步的（后台读
+        // Keychain，再回主 actor 刷新界面），不可能赶在构造返回前拿到值；放在 `super.init()`
+        // 之前只是让 `self` 在初始化完成前被使用，Swift 直接拒绝编译。
+        loadSavedUsername()
 
         contentController.add(self, name: Self.messageHandlerName)
         webView.navigationDelegate = self
