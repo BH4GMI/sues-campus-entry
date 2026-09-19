@@ -6,6 +6,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 同一分支的新推送取消尚未结束的旧运行：macOS runner 按 10 倍消耗额度，
+# 被取代的运行没有保留价值。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: macos-latest
@@ -92,3 +98,73 @@ jobs:
             -derivedDataPath build/DerivedData-test \
             CODE_SIGNING_ALLOWED=NO \
             test
+
+      # 以上几步都面向模拟器 SDK。下面转向真机：先用同一思路做一次真机 SDK 的类型检查，
+      # 把「只在 device 目标下才出现的编译错误」一次报全。Release 配置下 DEBUG 分支不参与编译，
+      # 因此这一步同时覆盖 Release 专属的编译路径。
+      - name: 类型检查（真机 SDK）
+        run: |
+          set -x
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          xcrun --sdk iphoneos swiftc -typecheck \
+            -target arm64-apple-ios17.0 \
+            -sdk "$SDK" \
+            -swift-version 5 \
+            $(find CampusEntry -name '*.swift' -print)
+
+      # 产出未签名的真机归档：没有 Apple 开发者账号，也不该由仓库保管分发证书，
+      # 因此这里只归档、不签名，由使用者在自己的机器上用重签工具安装。
+      - name: 构建未签名真机归档
+        run: |
+          set -x
+          xcodebuild archive \
+            -project CampusEntry.xcodeproj \
+            -scheme CampusEntry \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath build/CampusEntry.xcarchive \
+            CODE_SIGNING_ALLOWED=NO
+
+      # 归档产物是 .app，重签工具吃的是 .ipa，按 Payload/ 结构组装。
+      # 同时把「能不能装到 iPad、装上是否完整」从工程里的声明落到产物本身核对：
+      # 工程写的是意图，Info.plist 与包内容才是事实。
+      - name: 组装未签名 ipa 并核对产物
+        run: |
+          set -euo pipefail
+          APP="build/CampusEntry.xcarchive/Products/Applications/CampusEntry.app"
+          if [ ! -d "$APP" ]; then
+            echo "归档中没有 CampusEntry.app"; exit 1
+          fi
+          echo "最低系统版本：$(plutil -extract MinimumOSVersion raw -o - "$APP/Info.plist")"
+          NAME="$(plutil -extract CFBundleDisplayName raw -o - "$APP/Info.plist")"
+          echo "应用显示名：$NAME"
+          if [ "$NAME" != "教务直达" ]; then
+            echo "应用显示名不是「教务直达」"; exit 1
+          fi
+          FAMILY="$(plutil -extract UIDeviceFamily json -o - "$APP/Info.plist")"
+          echo "支持设备族：$FAMILY（1=iPhone，2=iPad）"
+          case "$FAMILY" in
+            *2*) ;;
+            *) echo "Info.plist 未声明 iPad：UIDeviceFamily 缺少 2"; exit 1 ;;
+          esac
+
+          rm -rf build/ipa
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry CampusEntry-unsigned.ipa Payload)
+
+          # 页面脚本必须真的进了真机包：少一个，页面契约就断一处。
+          JS="$(unzip -l build/ipa/CampusEntry-unsigned.ipa | grep -c 'CampusEntry\.app/js/.*\.js$' || true)"
+          echo "包内页面脚本数：$JS"
+          if [ "$JS" -ne 13 ]; then
+            echo "期望 13 个页面脚本，实际 $JS"; exit 1
+          fi
+          ls -lh build/ipa/CampusEntry-unsigned.ipa
+
+      - name: 上传未签名 ipa
+        uses: actions/upload-artifact@v5
+        with:
+          name: CampusEntry-unsigned-ipa
+          path: ios/build/ipa/CampusEntry-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14

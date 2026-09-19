@@ -8,6 +8,8 @@ xcuserdata/
 .gradle/
 .kotlin/
 build/
+*.ipa
+*.xcarchive
 local.properties
 
 # 编辑器与本机状态
