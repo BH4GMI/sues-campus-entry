@@ -19,7 +19,7 @@ runner（Xcode 26.6 / iOS 26 模拟器）上执行。当前结果：
 | `xcodebuild test`（模拟器） | **TEST SUCCEEDED**，`Executed 55 tests, with 0 failures`（7 + 23 + 8 + 4 + 13） |
 | `swiftc -typecheck`（真机 SDK，`arm64-apple-ios17.0`） | 通过 |
 | `xcodebuild archive`（真机 SDK，Release，不签名） | **ARCHIVE SUCCEEDED** |
-| 组装未签名 `.ipa` 并核对产物 | 通过：`MinimumOSVersion` 17.0、显示名「教务直达」、`UIDeviceFamily` `[1,2]`、包内 13 个页面脚本，产物 168 KB |
+| 组装未签名 `.ipa` 并核对产物 | 通过：包内 22 个条目（可执行文件、`Assets.car`、iPhone 与 iPad 两套图标），`MinimumOSVersion` 17.0、显示名「教务直达」、`UIDeviceFamily` `[1,2]`、`~iphone` 与 `~ipad` 方向键齐备、13 个页面脚本无缺；产物 168 KB |
 
 **编译与单测通过不等于交付完成。** 仍未验证的部分：
 
@@ -32,7 +32,7 @@ runner（Xcode 26.6 / iOS 26 模拟器）上执行。当前结果：
 
 定位：**已能编译、真机归档成功、逻辑单测通过的移植稿**，不是可交付的成品。
 
-## 第一次真实编译发现并修掉的问题
+## 第一次真实编译与产物核对发现并修掉的问题
 
 1. **工程文件里 `shared/js` 的引用多了一级 `../`**（`project.pbxproj`）。该引用所在分组没有
    `path`，因此相对工程目录（`ios/`）解析；原来的 `../../shared/js` 指到了仓库上一级，资源拷贝
@@ -42,6 +42,12 @@ runner（Xcode 26.6 / iOS 26 模拟器）上执行。当前结果：
 3. **在 `super.init()` 之前调用 `loadSavedUsername()`**（`EntryHost.swift`）。该读取是异步的
    （后台读 Keychain 后回主 actor 刷新界面），放在构造完成前既拿不到值，也让 `self` 在初始化完成
    前被使用。已移到 `super.init()` 之后。
+4. **`project.yml` 漏写 iPad 的方向声明**（核对归档产物时发现）。手写的 `.xcodeproj` 里声明了
+   `INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad`，`project.yml` 只有 iPhone 那一行；而工程
+   由 `project.yml` 就地重建，于是归档产物的 `Info.plist` 里没有 `~ipad` 方向键，只靠系统的隐式
+   默认值碰巧落到同样四个方向。已补回，重新归档后确认该键出现。两个文件之间其余差异（`UIStatusBarStyle`
+   等于系统默认值、`SWIFT_EMIT_LOC_STRINGS` 只影响 DerivedData）经逐项核对无行为影响，结论记在
+   `project.yml` 的注释里。
 
 此外，下表的第 5、7、10 项由这次编译直接得出结论。
 
