@@ -1,0 +1,85 @@
+# XcodeGen 规范：iOS 工程结构的**唯一事实来源**。
+#
+# 为什么同时存在 project.yml 与手写的 CampusEntry.xcodeproj：交付这一端时手上没有 macOS/Xcode，
+# 没法用它生成工程文件。手写的 .xcodeproj 是为了让工程「打开即可用」，但它无法在本机验证；
+# 如果它打不开或结构不对，在 Mac 上执行下面两行即可按本文件重建出正确工程：
+#
+#     brew install xcodegen
+#     cd ios && xcodegen generate
+#
+# 两者不一致时，以本文件为准。
+name: CampusEntry
+options:
+  bundleIdPrefix: cn.sues
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  objectVersion: 77
+  developmentLanguage: zh-Hans
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    ALWAYS_SEARCH_USER_PATHS: NO
+
+targets:
+  CampusEntry:
+    type: application
+    platform: iOS
+    sources:
+      # 应用源码与资产：由 Xcode 的「同步文件夹」接管，新增文件不必改工程文件
+      - path: CampusEntry
+      # 三端共用的页面契约脚本。**不复制**，直接引用仓库根的同一批物理文件，
+      # 与 Android（assets.srcDir）和 PC（EmbeddedResource 链接）是同一个做法：
+      # 改一处三端同时变，杜绝三份漂移。以 folder 形式进包，Bundle 里路径为 js/<name>.js。
+      - path: ../shared/js
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cn.sues.campusentry
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: 1
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: 教务直达
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+
+  CampusEntryTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: CampusEntryTests
+    dependencies:
+      - target: CampusEntry
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cn.sues.campusentry.tests
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_EMIT_LOC_STRINGS: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+# 命令行构建与测试需要共享 scheme（XcodeGen 默认不生成），
+# 因此在这里显式声明，而不是依赖打开 Xcode 时自动创建的本机 scheme。
+schemes:
+  CampusEntry:
+    build:
+      targets:
+        CampusEntry: all
+        CampusEntryTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - name: CampusEntryTests

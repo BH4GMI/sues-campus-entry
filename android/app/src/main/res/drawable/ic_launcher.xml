@@ -1,0 +1,46 @@
+<!--
+    应用图标（Android）。
+
+    图形与 pc/tools/make-app-icon.ps1、ios/tools/make-app-icon.ps1 是**同一个标记**：
+    白色描边（不填充）的折角纸。刻意不含校徽、校名、印章——这是个人做的快捷入口，
+    不能看着像学校官方应用。
+
+    与 PC 的差别是**底板形状**，这是平台惯例而不是不一致：
+      - Windows 直接把图片画到桌面/任务栏，所以自己做完整外形（圆形满底）；
+      - Android 由启动器给图标施加外形遮罩，所以这里画**满幅方形**，
+        自己再画圆角或圆形会得到"圆套圆"的脏边。
+    iOS 同理，见 ios/tools/make-app-icon.ps1（那条还多一个"不许有 alpha"的硬要求）。
+
+    描边 3 对应 48 视口的 0.0625，与 PC/iOS 的描边比例一致；线帽与拐角都是圆头。
+    内部两条文字线保留：48dp 大于 PC 端触发光学简化的阈值（20px）。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#2F6FB5"
+        android:pathData="M0,0h48v48h-48z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M12.5,8.6 L29,8.6 L37.4,17.2 L37.4,39.4 L12.5,39.4 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M29,8.6 L29,17.2 L37.4,17.2" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M18,27.1 L32.4,27.1 M18,32.9 L27,32.9" />
+</vector>

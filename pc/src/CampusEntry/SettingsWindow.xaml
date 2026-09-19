@@ -1,0 +1,111 @@
+<Window x:Class="CampusEntry.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="设置"
+        Width="460" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{StaticResource Brush.Surface}"
+        FontFamily="{StaticResource AppFont}"
+        FontSize="{StaticResource Type.Body}"
+        UseLayoutRounding="True"
+        Icon="pack://application:,,,/Assets/CampusEntry.ico">
+
+    <!-- 与主窗口同一套自绘边框；固定尺寸的对话框不需要可缩放边缘 -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="34"
+                            ResizeBorderThickness="0"
+                            GlassFrameThickness="0"
+                            CornerRadius="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Border Background="{StaticResource Brush.Surface}"
+            BorderBrush="{StaticResource Brush.WindowBorder}"
+            BorderThickness="1" CornerRadius="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="34"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- === 对话框标题栏（与主窗口同一套自绘边框与配色） -->
+            <Grid Grid.Row="0" Background="{StaticResource Brush.Surface}">
+                <TextBlock Text="设置" FontSize="{StaticResource Type.Title}" FontWeight="SemiBold"
+                           Foreground="{StaticResource Brush.Ink}" VerticalAlignment="Center"
+                           Margin="14,0,0,0"/>
+                <Button Style="{StaticResource WindowCloseButton}" Content="&#xE8BB;"
+                        Width="44" Height="34" HorizontalAlignment="Right" Click="OnClose"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        AutomationProperties.Name="关闭设置"/>
+                <Rectangle Height="1" Fill="{StaticResource Brush.Line}" VerticalAlignment="Bottom"/>
+            </Grid>
+
+            <!-- === 内容 -->
+            <StackPanel Grid.Row="1" Margin="20,16,20,0">
+
+                <TextBlock Text="账号" FontSize="{StaticResource Type.Body}" FontWeight="SemiBold"
+                           Foreground="{StaticResource Brush.Ink}"/>
+                <TextBlock x:Name="SavedLine" Text="已保存：未保存" FontSize="{StaticResource Type.Caption}"
+                           Foreground="{StaticResource Brush.Secondary}" Margin="0,5,0,14"/>
+
+                <CheckBox x:Name="SaveAccountBox" Style="{StaticResource AppCheckBox}" Click="OnSaveAccountToggled">
+                    <StackPanel>
+                        <TextBlock Text="自动登录" FontSize="{StaticResource Type.Body}"
+                                   Foreground="{StaticResource Brush.Ink}"/>
+                        <TextBlock Text="登录后记住账号（加密保存在本机），下次自动填写"
+                                   FontSize="{StaticResource Type.Caption}"
+                                   Foreground="{StaticResource Brush.Secondary}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </CheckBox>
+
+                <CheckBox x:Name="HideNoticesBox" Style="{StaticResource AppCheckBox}"
+                          Click="OnHideNoticesToggled" Margin="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="收起教务系统首页的公告弹窗" FontSize="{StaticResource Type.Body}"
+                                   Foreground="{StaticResource Brush.Ink}"/>
+                        <TextBlock Text="那个弹窗没有关闭按钮；收起后仍可从页面右侧「通知公告」进入"
+                                   FontSize="{StaticResource Type.Caption}"
+                                   Foreground="{StaticResource Brush.Secondary}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </CheckBox>
+
+                <Rectangle Height="1" Fill="{StaticResource Brush.Line}" Margin="0,18,0,0"/>
+
+                <TextBlock Text="本机数据" FontSize="{StaticResource Type.Body}" FontWeight="SemiBold"
+                           Foreground="{StaticResource Brush.Ink}" Margin="0,16,0,10"/>
+
+                <Button Content="清除缓存 · 退出登录" Click="OnClearSession" HorizontalAlignment="Left"
+                        MinWidth="150" Style="{StaticResource ButtonGhost}"
+                        AutomationProperties.Name="清除缓存并退出登录"/>
+                <TextBlock Text="取消登录状态（删除 cookie），不删除保存的密码"
+                           FontSize="{StaticResource Type.Caption}"
+                           Foreground="{StaticResource Brush.Secondary}" Margin="0,5,0,14"/>
+
+                <Button x:Name="ClearAccountButton" Content="清除账号" Click="OnClearAccount"
+                        HorizontalAlignment="Left" MinWidth="150" Style="{StaticResource ButtonDanger}"/>
+                <TextBlock Text="删除加密保存在本机的账号密码；下次要重新手动登录"
+                           FontSize="{StaticResource Type.Caption}"
+                           Foreground="{StaticResource Brush.Secondary}" Margin="0,5,0,14"/>
+
+                <Button Content="改用其他账号" Click="OnSwitchAccount" HorizontalAlignment="Left"
+                        MinWidth="150" Style="{StaticResource ButtonGhost}"/>
+            </StackPanel>
+
+            <!-- === 底部动作区：桌面惯例是右对齐的默认按钮 -->
+            <Grid Grid.Row="2" Margin="0,20,0,0">
+                <Rectangle Height="1" Fill="{StaticResource Brush.Line}" VerticalAlignment="Top"/>
+                <!-- LastChildFill 必须关掉：它是默认 True，会把唯一的右停靠子元素撑成通栏大按钮 -->
+                <DockPanel Margin="20,0" Height="58" LastChildFill="False">
+                    <Button Content="关闭" Click="OnClose" IsCancel="True" IsDefault="True"
+                            DockPanel.Dock="Right" VerticalAlignment="Center" MinWidth="92"
+                            Style="{StaticResource ButtonGhost}"/>
+                </DockPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

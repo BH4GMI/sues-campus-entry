@@ -1,0 +1,67 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+android {
+    namespace 'app.webvpn.entry'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "app.webvpn.entry"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        // 密钥库路径只有真机/模拟器上才存在，必须在设备上验证
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        compose true
+        // BuildConfig.DEBUG 用来把「WebView 远程调试」限制在 debug 构建里，release 不留这个口子
+        buildConfig true
+    }
+
+    // AGP 默认只给 debug 变体建 androidTest（testBuildType 的默认值就是 "debug"）。
+    // 要拿测试包去测 **release** 包时，必须让测试包同变体：
+    //   .\gradlew :app:assembleReleaseAndroidTest -PtestBuildType=release
+    // 为什么必须同变体：Kotlin 给 `internal` 成员加**变体后缀**（`newTab$app_debug` / `newTab$app_release`），
+    // 于是 debug 变体的测试包对 release 应用调用 `internal` 方法会 `NoSuchMethodError`
+    //（2026-09 实测：20 项里 4 项因此失败，而应用本身完全正常）。默认值不变。
+    testBuildType = project.findProperty('testBuildType') ?: 'debug'
+
+    sourceSets {
+        main {
+            // 页面契约 JS 的唯一来源在仓库根 shared/js/，直接作为 assets 打进 APK（asset 名即文件名）
+            assets.srcDir '../../shared/js'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core-ktx:1.13.1'
+
+    // 界面。版本由 BOM 统一，避免各 compose 库版本互相错位。
+    implementation platform('androidx.compose:compose-bom:2024.09.00')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.activity:activity-compose:1.9.2'
+
+    testImplementation 'junit:junit:4.13.2'
+    // 仅测试用，不进 APK：真机上的密钥库与存储胶水必须在设备上跑
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+}

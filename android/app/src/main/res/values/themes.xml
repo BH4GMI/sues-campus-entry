@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DayNight：深色模式由 Compose 的 AppTheme 决定，这里只保证窗口底色与系统栏跟着走 -->
+    <style name="Theme.CampusEntry" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/window_bg</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
+    </style>
+</resources>

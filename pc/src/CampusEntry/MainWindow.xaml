@@ -1,0 +1,202 @@
+<Window x:Class="CampusEntry.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="教务直达"
+        Width="1080" Height="720" MinWidth="760" MinHeight="520"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        Background="{StaticResource Brush.Surface}"
+        FontFamily="{StaticResource AppFont}"
+        FontSize="{StaticResource Type.Body}"
+        UseLayoutRounding="True"
+        Icon="pack://application:,,,/Assets/CampusEntry.ico">
+
+    <!--
+        自绘标题栏（WPF 原生机制 WindowChrome，不是自己 hook 消息的非标做法）。
+        CaptionHeight 声明标题栏高度：这段高度内的空白区域由系统当成非客户区处理，
+        所以拖动、双击最大化、Alt+Space 系统菜单、拖到屏幕边缘贴靠全部保持原生行为。
+        真正的按钮用 WindowChrome.IsHitTestVisibleInChrome="True" 从标题栏里「挖」出来。
+        ResizeBorderThickness 保留 6px 的可缩放边缘，GlassFrameThickness=0 表示不用 Aero 玻璃。
+        UseAeroCaptionButtons=False：窗口按钮由我们自己画，才能与设计系统统一。
+
+        这里刻意 **不写 WindowStyle="None"**：去掉它会连带去掉 WS_CAPTION，系统对「没有标题栏
+        的窗口」做最大化时按整个显示器算尺寸、无视任务栏，实测窗口底边比工作区低 108px，
+        页面下缘被任务栏盖住。保留默认窗口样式即可——WindowChrome 通过 WM_NCCALCSIZE 把非客户区
+        清零，系统标题栏本来就不会被绘制，我们画的那一条才是唯一可见的标题栏；
+        同时 WS_CAPTION 还在，最大化会正确对齐工作区。
+    -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="36"
+                            ResizeBorderThickness="6"
+                            GlassFrameThickness="0"
+                            CornerRadius="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <!--
+        新的边框形式：整窗无系统边框，由这一层 1px 描边 + 8px 圆角自己表达。
+        最大化时圆角与描边都归零（Windows 惯例：贴满屏幕时不画圆角）。
+        8px 圆角与 Win11 DWM 的系统圆角半径一致；DWM 那边由代码里的
+        DwmSetWindowAttribute(DWMWA_WINDOW_CORNER_PREFERENCE) 兜底，保证窗口本体真的被裁成圆角。
+    -->
+    <Border Background="{StaticResource Brush.Surface}"
+            BorderBrush="{StaticResource Brush.WindowBorder}"
+            MinWidth="0">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}"
+                                 Value="Maximized">
+                        <Setter Property="CornerRadius" Value="0"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="36"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ================================================ 标题栏 -->
+            <Grid Grid.Row="0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                    <!--
+                        应用标记：与 pc/tools/make-app-icon.ps1 同一套几何，矢量绘制所以任意 DPI 都锐利。
+                        圆形满底 + 白色描边折角纸。坐标是 20×20 的 DIP 网格：纸面 5.2,3.6 → 15.6,16.4，
+                        右上折角在 (12.1, 7.2)。描边 1.3 DIP ≈ 图标脚本里 0.062 的描边比例。
+                        **刻意不含校徽/校名/印章**：这是个人做的快捷入口，不能看着像学校官方应用。
+                    -->
+                    <Grid Width="20" Height="20" VerticalAlignment="Center">
+                        <Ellipse Fill="{StaticResource Brush.Primary}"/>
+                        <Path Stroke="White" StrokeThickness="1.3"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                              Data="M 5.2,3.6 L 12.1,3.6 L 15.6,7.2 L 15.6,16.4 L 5.2,16.4 Z
+                                    M 12.1,3.6 L 12.1,7.2 L 15.6,7.2
+                                    M 7.5,11.3 L 13.5,11.3
+                                    M 7.5,13.7 L 11.2,13.7"/>
+                    </Grid>
+                    <TextBlock Text="教务直达" FontSize="{StaticResource Type.AppName}" FontWeight="SemiBold"
+                               Foreground="{StaticResource Brush.Ink}" Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                    <TextBlock x:Name="DocTitle" FontSize="{StaticResource Type.Caption}"
+                               Foreground="{StaticResource Brush.Secondary}" Margin="10,0,0,0"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="520"/>
+                </StackPanel>
+
+                <!-- 窗口按钮：从标题栏的拖动区里挖出来，否则点击会被当成拖动窗口 -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button x:Name="MinimizeButton" Style="{StaticResource WindowButton}" Content="&#xE921;"
+                            Click="OnMinimizeWindow" AutomationProperties.Name="最小化"/>
+                    <Button x:Name="MaximizeButton" Style="{StaticResource WindowButton}" Content="&#xE922;"
+                            Click="OnToggleMaximize" AutomationProperties.Name="最大化"/>
+                    <Button Style="{StaticResource WindowCloseButton}" Content="&#xE8BB;"
+                            Click="OnCloseWindow" AutomationProperties.Name="关闭"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ================================================ 工具栏 -->
+            <Border Grid.Row="1" Background="{StaticResource Brush.Surface}"
+                    BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1">
+                <!--
+                    IsEnabled 初值为 False：窗口一出现就能点，而 host 要等
+                    CoreWebView2Environment.CreateAsync 回来才存在（冷启动可到数秒）。
+                    这中间的点击原来会打在 null 上（NullReferenceException 直接崩）。
+                    等 WebView2 就绪、可以导航了再打开（见 StartCoreAsync 的 host.Ready）。
+                -->
+                <DockPanel x:Name="ToolbarHost" Height="44" LastChildFill="True" IsEnabled="False">
+
+                    <Button x:Name="SettingsButton" DockPanel.Dock="Right" Style="{StaticResource ToolbarTextButton}"
+                            Margin="0,0,10,0" VerticalAlignment="Center" Click="OnSettings"
+                            AutomationProperties.Name="设置">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="14"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="设置" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!--
+                        状态行的可点动作（APP-UX §5 状态文案表的「是否可点」列）：
+                        断网 → 「重试」、保存成功 → 「撤销」。没有动作时整块塌陷，不占位。
+                        **这块是必须的**：`EntryHost.OnNoticeAction()` 之前一个调用者都没有，
+                        于是「重试 / 撤销」在 PC 上根本点不到——安卓与 iOS 两端都有这个按钮。
+                        停靠顺序决定左右：设置最右，动作按钮次之，状态文字在它左边。
+                    -->
+                    <Button x:Name="NoticeActionButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                            Style="{StaticResource ToolbarTextButton}" Margin="0,0,16,0"
+                            Visibility="Collapsed" Click="OnNoticeAction"
+                            AutomationProperties.Name="状态动作"/>
+
+                    <!--
+                        状态文字：左右各留 16 DIP。
+                        左边那 16 是把它和页签隔开；**右边那 16 不能省**——省略时它会与「设置」
+                        按钮严丝合缝地贴在一起（UIA 实测间距 0 DIP），一长句状态与按钮在视觉上连成
+                        一行。状态最长可到 MaxWidth，所以这个间距在任何文案下都必须存在。
+                    -->
+                    <TextBlock x:Name="NoticeText" DockPanel.Dock="Right" VerticalAlignment="Center"
+                               Foreground="{StaticResource Brush.Secondary}" FontSize="{StaticResource Type.Body}"
+                               Margin="16,0,16,0" TextTrimming="CharacterEllipsis" MaxWidth="380"
+                               AutomationProperties.Name="状态"/>
+
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center"
+                                Margin="8,0,0,0">
+                        <Button x:Name="BackButton" Style="{StaticResource IconButton}" Content="&#xE72B;"
+                                Click="OnBack" AutomationProperties.Name="后退 (Alt+←)"/>
+                        <Button x:Name="ForwardButton" Style="{StaticResource IconButton}" Content="&#xE72A;"
+                                Click="OnForward" AutomationProperties.Name="前进 (Alt+→)"/>
+                        <Button Style="{StaticResource IconButton}" Content="&#xE72C;"
+                                Click="OnReload" AutomationProperties.Name="刷新 (F5)"/>
+                        <!-- 分隔线高度与内容等高，不再是一条高过文字的孤线 -->
+                        <Rectangle Width="1" Height="20" Fill="{StaticResource Brush.Line}"
+                                   Margin="10,0" VerticalAlignment="Center"/>
+                        <RadioButton x:Name="TabJxfw" GroupName="Entry" Style="{StaticResource ToolbarTab}"
+                                     Content="教务系统" Click="OnOpenJxfw"
+                                     AutomationProperties.Name="打开教务系统 (Ctrl+1)"/>
+                        <RadioButton x:Name="TabWebvpn" GroupName="Entry" Style="{StaticResource ToolbarTab}"
+                                     Content="WebVPN" Click="OnOpenWebvpn"
+                                     AutomationProperties.Name="打开 WebVPN (Ctrl+2)"/>
+                    </StackPanel>
+
+                    <Border Background="Transparent"/>
+                </DockPanel>
+            </Border>
+
+            <!-- ================================================ 首次运行横幅（可关闭，保存成功后不再出现） -->
+            <Border x:Name="FirstRunBanner" Grid.Row="2" Background="{StaticResource Brush.Neutral}"
+                    BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1"
+                    Padding="14,9" Visibility="Collapsed">
+                <DockPanel LastChildFill="True">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE8BB;"
+                            FontSize="12" Width="28" Height="28" Click="OnCloseBanner"
+                            AutomationProperties.Name="关闭提示"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <!-- 「非官方」这句不能省：应用看着像学校的东西，就必须自己把身份说清楚 -->
+                        <TextBlock Text="非官方：这是个人做的教务系统快捷入口，与学校无关。"
+                                   FontSize="{StaticResource Type.Body}"
+                                   Foreground="{StaticResource Brush.Ink}" VerticalAlignment="Center"/>
+                        <TextBlock Text="首次登录后记住账号（加密保存在本机），以后双击图标直接进教务系统。"
+                                   FontSize="{StaticResource Type.Body}" Margin="0,3,0,0"
+                                   Foreground="{StaticResource Brush.Secondary}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="BannerSaved" Text="" FontSize="{StaticResource Type.Body}"
+                                   Foreground="{StaticResource Brush.Success}"
+                                   VerticalAlignment="Center" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- ================================================ 内容区：整页就是站点 -->
+            <Grid Grid.Row="3">
+                <ContentControl x:Name="WebHost"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

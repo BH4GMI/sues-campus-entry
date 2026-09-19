@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>CampusEntry</RootNamespace>
+    <AssemblyName>CampusEntry</AssemblyName>
+    <!--
+      显示名与文件名分开是刻意的：
+        - 「教务直达」是给人看的名字（窗口标题、任务栏、文件属性的产品名）；
+        - `CampusEntry` 是磁盘上的标识（exe 文件名、命名空间、程序集名、资源逻辑名）。
+      中文 exe 文件名在压缩包、老工具、脚本里容易出现乱码，所以文件名保持 ASCII。
+      注意：%LOCALAPPDATA%\CampusEntry\ 数据目录与这个名字**无关**，改名时不能跟着动，
+      否则已保存的账号会全部失效。
+    -->
+    <Product>教务直达</Product>
+    <AssemblyTitle>教务直达</AssemblyTitle>
+    <Description>教务系统与 WebVPN 的桌面快捷入口（非官方）</Description>
+    <Company>非官方个人项目</Company>
+    <!-- PerMonitorV2 DPI 感知：没有这份清单时进程只有 SYSTEM_AWARE，跨显示器会整窗发虚 -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 应用图标由 pc/tools/make-app-icon.ps1 生成，脚本才是唯一事实来源 -->
+    <ApplicationIcon>Assets\CampusEntry.ico</ApplicationIcon>
+    <!-- 页面契约 JS 与 Android 端共用仓库根的 shared/js，链接进工程（同一批文件，不复制） -->
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <!--
+      便携版要的是「一个文件拿走」。依赖包自带的 .xml 文档与 .pdb 不是运行期需要的，
+      默认会被复制到发布目录，把单文件发布变成「一个 exe + 几个尾巴」，这里直接不要。
+    -->
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 让窗口标题栏与任务栏都能用 pack URI 取到同一个图标 -->
+    <Resource Include="Assets\CampusEntry.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\shared\js\probe.js" LogicalName="CampusEntry.js.probe.js" />
+  <EmbeddedResource Include="..\..\..\shared\js\arrival.js" LogicalName="CampusEntry.js.arrival.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\tick-notice.js" LogicalName="CampusEntry.js.tick-notice.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\cas-state.js" LogicalName="CampusEntry.js.cas-state.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\skip-expired.js" LogicalName="CampusEntry.js.skip-expired.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\captcha-watch.js" LogicalName="CampusEntry.js.captcha-watch.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\captcha-stop.js" LogicalName="CampusEntry.js.captcha-stop.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\slider-geometry.js" LogicalName="CampusEntry.js.slider-geometry.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\drag.js" LogicalName="CampusEntry.js.drag.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\fill-and-submit.js" LogicalName="CampusEntry.js.fill-and-submit.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\credential-watch.js" LogicalName="CampusEntry.js.credential-watch.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\credential-stop.js" LogicalName="CampusEntry.js.credential-stop.js" />
+    <EmbeddedResource Include="..\..\..\shared\js\notice-dialog.js" LogicalName="CampusEntry.js.notice-dialog.js" />
+  </ItemGroup>
+
+</Project>
+

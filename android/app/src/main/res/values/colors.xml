@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 界面本身由 Compose 画（颜色见仓库根目录 DESIGN.md）；这里只留窗口与系统栏需要的那几个 -->
+    <color name="primary">#2F6FB5</color>
+    <color name="primary_dark">#24548A</color>
+    <color name="accent">#2F6FB5</color>
+    <color name="window_bg">#F5F7FA</color>
+</resources>

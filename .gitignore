@@ -1,0 +1,32 @@
+# 构建产物
+bin/
+obj/
+dist/
+DerivedData/
+*.xcuserdatad/
+xcuserdata/
+.gradle/
+.kotlin/
+build/
+local.properties
+
+# 编辑器与本机状态
+.vs/
+.idea/
+*.iml
+*.user
+
+# 日志
+*.log
+
+# 凭据与签名材料（一律不入库）
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.mobileprovision
+secrets/
+
+# 本机素材：非构建内容
+docs/screenshots/
+reference/

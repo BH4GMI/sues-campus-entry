@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="1.0.0.0" name="CampusEntry.app" />
+
+  <!-- Windows 10 / 11 的兼容性声明：让 DWM 按现代窗口规则处理圆角、阴影与 Snap -->
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+    </application>
+  </compatibility>
+
+  <!--
+    每显示器 DPI 感知（PerMonitorV2）。
+    不声明时进程只有 SYSTEM_AWARE：只认登录时的系统 DPI，一旦窗口被拖到缩放比不同的显示器、
+    或在运行中改了缩放，整个窗口会被位图拉伸而发虚。PerMonitorV2 让 WPF 收到 WM_DPICHANGED
+    后按新 DPI 重新排版与重新光栅化，文字与矢量图标始终锐利。
+
+    取值必须用它自己的小写枚举（unaware / system / permonitor / permonitorv2）：
+    写成 "PerMonitorV2" 会被判为无法识别，静默回退到下面那行旧式 dpiAware=true/pm，
+    实测进程感知级别就停在了 PER_MONITOR_AWARE(2) 而不是 PER_MONITOR_AWARE_V2(3)。
+    逗号列表是官方推荐的降级顺序：支持 V2 的系统取 V2，不支持的回退 V1。
+  -->
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">permonitorv2,permonitor</dpiAwareness>
+    </windowsSettings>
+  </application>
+</assembly>
