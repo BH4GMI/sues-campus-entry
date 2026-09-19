@@ -18,8 +18,8 @@
     -->
     <Product>教务直达</Product>
     <AssemblyTitle>教务直达</AssemblyTitle>
-    <Description>教务系统与 WebVPN 的桌面快捷入口（非官方）</Description>
-    <Company>非官方个人项目</Company>
+    <Description>教务系统与 WebVPN 的桌面快捷入口</Description>
+    <Company>个人项目</Company>
     <!-- PerMonitorV2 DPI 感知：没有这份清单时进程只有 SYSTEM_AWARE，跨显示器会整窗发虚 -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 应用图标由 pc/tools/make-app-icon.ps1 生成，脚本才是唯一事实来源 -->
