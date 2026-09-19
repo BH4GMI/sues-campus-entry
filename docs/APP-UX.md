@@ -415,17 +415,20 @@ HTML 实体要解码（`账号&amp;密码错误` → `账号&密码错误`）。
 > 未实测项（首次运行横幅、贴靠布局悬浮预览）与残余偏差（最大化客户区每边比工作区大 13px，
 > `WindowChrome` 已消费 `WM_GETMINMAXINFO` 故无法在钩子里修正）逐条写在 `pc/README.md` 的「已知限制」。
 
-> **iOS 端（2026-09-19）：工程已建，最初一次都没编译过；现已由 CI 在 macOS 上编译并跑通单测。**
+> **iOS 端（2026-09-19）：工程已建，最初一次都没编译过；现已由 CI 在 macOS 上编译、跑通单测，
+> 并对真机 SDK 归档成功。**
 > 交付机是 Windows，`swift` / `swiftc` / `xcodebuild` / `xcodegen` / `clang` 全部不存在，也没有
-> macOS。`.github/workflows/ios.yml` 在 GitHub 托管的 macOS runner（Xcode 26.6）上执行类型检查、
-> 原样编译手写工程、按 `project.yml` 重建工程、`xcodebuild test`，四步全部通过，
-> `Executed 55 tests, with 0 failures`。第一次真实编译暴露出并修掉了三处问题（工程文件里
+> macOS。`.github/workflows/ios.yml` 在 GitHub 托管的 macOS runner（Xcode 26.6）上执行类型检查
+> （模拟器与真机各一次）、原样编译手写工程、按 `project.yml` 重建工程、`xcodebuild test`
+> （`Executed 55 tests, with 0 failures`）、真机 Release 归档与未签名 `.ipa` 组装，全部通过；
+> 归档产物的 `Info.plist` 核对出 `MinimumOSVersion` 17.0、显示名「教务直达」、`UIDeviceFamily`
+> `[1,2]`，包内 13 个页面脚本齐备。第一次真实编译暴露出并修掉了三处问题（工程文件里
 > `shared/js` 的路径多一级、`performDefaultHandling` 缺参数标签、在 `super.init()` 之前调用异步的
 > `loadSavedUsername()`），详见 `ios/README.md`。
 >
 > **但本矩阵的场景 1–10 在 iOS 上仍然全部未验证**：SwiftUI 界面没有在模拟器或真机上出现过，
-> `WKWebView` 宿主的运行时行为没有执行过，`KeychainCryptoBackend` 只编译过、没有运行过。编译与
-> 单测通过不等于交付完成；这一端目前的定位仍是移植稿，不是可交付的成品。
+> `WKWebView` 宿主的运行时行为没有执行过，`KeychainCryptoBackend` 只编译过、没有运行过。编译、
+> 归档与单测通过不等于交付完成；这一端目前的定位仍是移植稿，不是可交付的成品。
 
 ## 10. 已修的六处罚据／顺序错误
 

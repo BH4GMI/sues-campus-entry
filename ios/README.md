@@ -1,4 +1,4 @@
-# iOS 端 —— 已编译、单测通过；界面与真机链路未验证
+# iOS 端 —— 已编译、真机归档成功、单测通过；界面与链路未验证
 
 打开教务系统（默认）与 WebVPN（次要），**不做导入**。自动登录的**判断逻辑与 Android/PC 逐条一致**
 （同一份 `docs/CORE-SPEC.md`、同一批页面脚本 `shared/js/`、各自语言的等价单测）。
@@ -8,15 +8,18 @@
 这一端交付时所在的机器是 Windows，没有 Swift 工具链（`swift` / `swiftc` / `xcodebuild` /
 `xcodegen` / `clang` 全部不存在），也没有 macOS，因此最初**一次都没有编译过**。
 
-自 2026-09-19 起，编译与单测由 `.github/workflows/ios.yml` 在 GitHub 托管的 macOS runner
-（Xcode 26.6 / iOS 26 模拟器）上执行。当前结果：
+自 2026-09-19 起，编译、单测与出包由 `.github/workflows/ios.yml` 在 GitHub 托管的 macOS
+runner（Xcode 26.6 / iOS 26 模拟器）上执行。当前结果：
 
 | 步骤 | 结果 |
 | --- | --- |
-| `swiftc -typecheck`（全部源文件，一次报出所有错误） | 通过 |
-| 原样编译仓库内的 `CampusEntry.xcodeproj` | **BUILD SUCCEEDED** |
+| `swiftc -typecheck`（模拟器 SDK，全部源文件一次报出所有错误） | 通过 |
+| 原样编译仓库内的 `CampusEntry.xcodeproj`（模拟器） | **BUILD SUCCEEDED** |
 | `xcodegen generate` 按 `project.yml` 就地重建工程 | 通过 |
-| `xcodebuild test` | **TEST SUCCEEDED**，`Executed 55 tests, with 0 failures` |
+| `xcodebuild test`（模拟器） | **TEST SUCCEEDED**，`Executed 55 tests, with 0 failures`（7 + 23 + 8 + 4 + 13） |
+| `swiftc -typecheck`（真机 SDK，`arm64-apple-ios17.0`） | 通过 |
+| `xcodebuild archive`（真机 SDK，Release，不签名） | **ARCHIVE SUCCEEDED** |
+| 组装未签名 `.ipa` 并核对产物 | 通过：`MinimumOSVersion` 17.0、显示名「教务直达」、`UIDeviceFamily` `[1,2]`、包内 13 个页面脚本，产物 168 KB |
 
 **编译与单测通过不等于交付完成。** 仍未验证的部分：
 
@@ -27,7 +30,7 @@
 - 真机运行未做过。`SliderDragTests` 中两条用例经 `#filePath` 读取仓库根的 `shared/js`，在模拟器
   上有效，在真机上读不到宿主机的文件系统。
 
-定位：**已能编译、逻辑单测通过的移植稿**，不是可交付的成品。
+定位：**已能编译、真机归档成功、逻辑单测通过的移植稿**，不是可交付的成品。
 
 ## 第一次真实编译发现并修掉的问题
 
@@ -42,9 +45,29 @@
 
 此外，下表的第 5、7、10 项由这次编译直接得出结论。
 
+## 装到 iPad / iPhone（没有 Mac 的路径）
+
+开发机是 Windows，装不进 Xcode 的 Run；流水线因此额外产出一份**未签名**的真机安装包，
+配合重签工具即可完成安装：
+
+1. 打开该提交对应的 Actions 运行页，在 **Artifacts** 里下载 `CampusEntry-unsigned-ipa`；
+2. 在 Windows 上用重签工具（Sideloadly 等）把它装到设备——工具会用你自己的 Apple ID 重新签名，
+   过程中可以改 bundle id；
+3. 首次运行前需要在设备上信任证书：「设置 → 通用 → VPN 与设备管理」；系统若要求，
+   还要在「设置 → 隐私与安全性 → 开发者模式」打开开发者模式并重启；
+4. 用免费 Apple ID 签出来的应用有效期 7 天，到期后重装一次。
+
+未签名的包不能直接安装，必须经过重签；仓库不保存任何证书与描述文件，也不代管 Apple ID。
+
+**系统版本门槛**：部署目标是 iOS 17.0（`project.yml` 的 `deploymentTarget`），归档产物的
+`Info.plist` 里 `MinimumOSVersion` 也是 17.0，因此设备需要 **iPadOS / iOS 17 或更高**。
+源码中没有出现 `@available(iOS …)` 标注，也没有使用 iOS 17 才引入的 API
+（`ContentUnavailableView`、`@Observable`、SwiftData 等），所以降到 16.0 在编译层面预计可行，
+但**没有验证过**——要确认必须改目标重编一次。
+
 ## 首次在 Mac 上要做的事
 
-CI 已经覆盖编译、类型检查与单测；在 Mac 上要做的是**跑起来看**——模拟器里的界面、真机上的链路：
+CI 已经覆盖编译、类型检查、单测与真机归档；在 Mac 上要做的是**跑起来看**——模拟器里的界面、真机上的链路：
 
 ```bash
 # 1. 打开工程（Xcode 16+；工程文件用的是 objectVersion 77 与「同步文件夹」特性）
@@ -161,7 +184,7 @@ pwsh -File ios/tools/make-app-icon.ps1
 | 6 | UA 处理：把 `Mobile` 换成桌面标记后，UA 里仍含 `iPhone` | 未解决（需要真实站点） | 站点若按 `iPhone` 判手机，会走「与表单同页」的滑块形态（`CORE-SPEC §5.1` 同样覆盖，逻辑不变）；改成整条桌面 UA |
 | 7 | 工程文件是手写的、`objectVersion = 77` + 「同步文件夹」需要 **Xcode 16+** | **已解决**：Xcode 26.6 能打开该工程（`xcodebuild -list` 正常，目标/配置/scheme 齐全），并构建成功 | — |
 | 8 | `SliderSolver` 有 `RgbaImage` 便捷重载，但 `EntryHost` 走的是 `[Int32]` 原始版本 | 已核对：`EntryHost` 打包 `0xAARRGGBB`，`SliderSolver` 提取 `>>16 / >>8 / &0xFF`，**一致** | — |
-| 9 | `SliderDragTests` 里两条用例要读仓库根的 `shared/js`（用 `#filePath` 向上找） | 未解决（真机项）：模拟器上有效，真机上读不到宿主机文件系统 | 要么只在模拟器跑，要么改成从 app bundle 读 `js/`（内容相同） |
+| 9 | `SliderDragTests` 里两条用例要读仓库根的 `shared/js`（用 `#filePath` 向上找） | 未解决（真机项）：模拟器上有效，真机上读不到宿主机文件系统。包内 `js/` 的落点与 13 个脚本已由归档产物核对过 | 要么只在模拟器跑，要么改成从 app bundle 读 `js/`（内容相同） |
 | 10 | 测试方法用的是中文名（`func test共享脚本都装着各自的占位符()`） | **已解决**：`Executed 55 tests`，55 个用例全部被执行，未漏跑 | — |
 | 11 | `SliderSolverTests` 的「尺寸不合法」用例走 `RgbaImage` 入口 | 用例通过；与 C# 属**同结论、不同判据路径**的备注仍然成立 | 若要严格同路径，让用例直接调 `[Int32]` 原始入口 |
 

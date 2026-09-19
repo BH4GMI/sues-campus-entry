@@ -24,7 +24,7 @@
 | --- | --- | --- | --- |
 | Windows | C# / .NET 8 / WPF / WebView2 | `pc/` | 已实现，真实链路实测通过，见 `pc/README.md` |
 | Android | Kotlin / Compose / WebView | `android/` | 已实现，单测 73 项、真机仪表测试 20 项通过 |
-| iOS | Swift / SwiftUI / WKWebView | `ios/` | 已实现，编译与 55 项单测在 macOS runner 上通过；界面与真机链路未验证，见 `ios/README.md` |
+| iOS | Swift / SwiftUI / WKWebView | `ios/` | 已实现，模拟器编译与 55 项单测、真机 Release 归档均在 macOS runner 上通过，并产出未签名 `.ipa`；界面与真机链路未验证，见 `ios/README.md` |
 
 ## 仓库结构
 
@@ -100,18 +100,21 @@ adb shell am instrument -w app.webvpn.entry.test/androidx.test.runner.AndroidJUn
 
 ### iOS
 
-本机为 Windows，没有 Swift 工具链与 macOS，无法本地编译，编译与单测全部在
+本机为 Windows，没有 Swift 工具链与 macOS，无法本地编译，编译、单测与出包全部在
 `.github/workflows/ios.yml` 中执行（GitHub 托管的 macOS runner，Xcode 26.6）。步骤依次为：
 
 1. `swiftc -typecheck` 对全部源文件做一次类型检查——`xcodebuild` 在第一条编译错误之后就会取消
-   其余任务，这一层用于一次拿到完整错误清单；
+   其余任务，这一层用于一次拿到完整错误清单（模拟器 SDK 与真机 SDK 各做一次）；
 2. 原样编译仓库内的 `CampusEntry.xcodeproj`，验证手写的工程文件本身可用；
 3. 用 `xcodegen` 按 `project.yml` 就地重建工程，再执行 `xcodebuild test`。
-   `project.yml` 是工程结构的唯一事实来源，两者不一致时以它为准。
+   `project.yml` 是工程结构的唯一事实来源，两者不一致时以它为准；
+4. 用 Release 配置对真机 SDK 归档（不签名），按 `Payload/` 组装出未签名 `.ipa`，核对产物的
+   `Info.plist`（最低系统版本、显示名、设备族）与包内 13 个页面脚本，最后作为 Actions Artifact
+   上传。它配合重签工具即可装到 iPhone / iPad，步骤见 `ios/README.md`。
 
-截至 2026-09-19，上述四步全部通过，55 项 XCTest 全绿。**编译与单测通过不等于交付完成**：
-SwiftUI 界面、`WKWebView` 宿主行为与真机链路都还没有运行过，`docs/APP-UX.md` §9 的场景 1–10
-在 iOS 上仍为未验证。待确认项与首次在 Mac 上的手动步骤见 `ios/README.md`。
+截至 2026-09-19，上述步骤全部通过：模拟器上 55 项 XCTest 全绿，真机 Release 归档成功。
+**编译与单测通过不等于交付完成**：SwiftUI 界面、`WKWebView` 宿主行为与真机链路都还没有运行过，
+`docs/APP-UX.md` §9 的场景 1–10 在 iOS 上仍为未验证。待确认项与安装步骤见 `ios/README.md`。
 
 ## 测试覆盖的分层
 
@@ -134,6 +137,6 @@ Windows 宿主层用例的运行约束：WebView2 需要 STA 线程与消息泵�
 
 - 本仓库只做「打开系统」这一件事。课表导入（`get-data` / `.wakeup_schedule`）属于其它项目，
   不在范围内。
-- iOS 端已能编译、55 项逻辑单测通过，但界面与真机链路从未运行；其「与另外两端逻辑一致」目前
-  来自源码与用例的对齐及这批单测，不是端到端运行结果的比对。
+- iOS 端已能编译、真机归档成功、55 项逻辑单测通过，但界面与真机链路从未运行；其「与另外两端
+  逻辑一致」目前来自源码与用例的对齐及这批单测，不是端到端运行结果的比对。
 - 会话均为会话级 cookie，冷启动必然重新认证一次；这是学校站点的行为，不是本应用的缓存策略。
