@@ -27,12 +27,13 @@
 ## 仓库结构
 
 ```
-LICENSE      MIT 许可全文
-shared/js/   两端共用的页面契约脚本（物理上只有这一份）
-docs/        跨端契约与实测记录
-DESIGN.md    两端视觉 token 的唯一来源
-pc/          Windows 端源码、测试与工具
-android/     Android 端源码、测试与工具
+LICENSE                  MIT 许可全文
+THIRD-PARTY-NOTICES.md   二进制产物中第三方组件的许可
+shared/js/               两端共用的页面契约脚本（物理上只有这一份）
+docs/                    跨端契约与实测记录
+DESIGN.md                两端视觉 token 的唯一来源
+pc/                      Windows 端源码、测试与工具
+android/                 Android 端源码、测试与工具
 ```
 
 页面契约脚本不复制：Android 以 `assets.srcDir` 打包、Windows 以内嵌资源链接，
@@ -121,3 +122,6 @@ Windows 宿主层用例的运行约束：WebView2 需要 STA 线程与消息泵�
 ## 许可
 
 本项目以 **MIT License** 发布，全文见 [`LICENSE`](LICENSE)。
+
+发布的二进制产物中还随附第三方组件（.NET 运行时、WebView2 SDK、AndroidX、Kotlin 等），
+其许可与声明见 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)。
