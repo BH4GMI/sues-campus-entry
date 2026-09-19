@@ -141,8 +141,14 @@ jobs:
           if [ "$NAME" != "教务直达" ]; then
             echo "应用显示名不是「教务直达」"; exit 1
           fi
-          FAMILY="$(plutil -extract UIDeviceFamily json -o - "$APP/Info.plist")"
-          echo "支持设备族：$FAMILY（1=iPhone，2=iPad）"
+          if ! FAMILY="$(plutil -extract UIDeviceFamily json -o - "$APP/Info.plist" 2>/dev/null)"; then
+            echo "读不出 UIDeviceFamily 键，Info.plist 全文如下："
+            plutil -p "$APP/Info.plist"
+            exit 1
+          fi
+          # ${FAMILY} 的花括号不能省：bash 在 UTF-8 区域设置下会把紧跟变量名的全角括号
+          # 当成变量名的一部分，`$FAMILY（` 会以 unbound variable 失败而不是取值。
+          echo "支持设备族：${FAMILY}（1=iPhone，2=iPad）"
           case "$FAMILY" in
             *2*) ;;
             *) echo "Info.plist 未声明 iPad：UIDeviceFamily 缺少 2"; exit 1 ;;
