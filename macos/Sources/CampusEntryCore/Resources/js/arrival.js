@@ -1,0 +1,1 @@
+(function(){try{var b=document.body?(document.body.innerText||''):'';var m=['个人信息','注销','资源站点'];for(var i=0;i<m.length;i++){if(b.indexOf(m[i])>=0)return 'arrival|'+m[i];}return 'arrival|none';}catch(e){return 'arrival|err';}})()

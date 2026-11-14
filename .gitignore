@@ -5,7 +5,22 @@ dist/
 .gradle/
 .kotlin/
 build/
+.build/
+.swiftpm/
 local.properties
+*.dmg
+*.app/
+
+# 运行时与工具依赖缓存
+node_modules/
+__pycache__/
+*.pyc
+
+# 环境变量与系统杂项
+.DS_Store
+**/.DS_Store
+.env
+.env.*
 
 # 编辑器与本机状态
 .vs/
