@@ -6,10 +6,12 @@ namespace CampusEntry;
 /// <summary>设置对话框（桌面惯例：模态窗口 + 标准控件，不是手机抽屉）。</summary>
 public partial class SettingsWindow : Window
 {
-    private readonly EntryHost host;
+    // 设置是**整个会话**的事：改「自动登录」要同步到每个标签，退出登录要清掉所有标签的会话。
+    // 所以这里拿的是标签宿主，不是某一个标签。
+    private readonly TabHost host;
     private readonly Action onChanged;
 
-    internal SettingsWindow(EntryHost host, Action onChanged, Window owner)
+    internal SettingsWindow(TabHost host, Action onChanged, Window owner)
     {
         this.host = host;
         this.onChanged = onChanged;

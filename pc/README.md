@@ -13,7 +13,15 @@
   右侧是系统样式的 `—` `□` `✕`。
   用 WPF 原生 `WindowChrome` 实现，拖动、双击最大化、贴边贴靠、`Alt+Space` 系统菜单**都是系统行为**。
 - **工具栏**：`← → ⟳ | 教务系统 | WebVPN | （右侧）状态一句话 + ⚙ 设置`。
-- **快捷键**：`Alt+←/→` 后退前进、`Ctrl+1/2` 切换入口、`F5` 刷新；支持鼠标后退/前进侧键。
+- **标签栏**：站点 `window.open` / `target=_blank` 开的页面各占一个**真标签页**（各自一份 WebView2、
+  一套自己的导航状态机），点页签来回切；`Ctrl+Tab` / `Ctrl+Shift+Tab` 循环、`Ctrl+W` 关闭。
+  只有一个标签时整条收起，不占那 34 DIP。
+  切换**只改可见性、不导航**——切回去还是原来那一页，表单内容、滚动位置、滚动条都在，
+  状态机的文档序号也不会因为「用户切页面」而变化。这与 Android 的 `Tab` + `switchTo` 是同一套语义。
+- **后台标签不跑自动化**：切走的标签会停掉滑块/凭据监视器和所有计时器（`PauseAutomation`），
+  切回再按「是不是认证页」重装（`ResumeAutomation`）。用户在看 A 页时，B 页不会在后台替他提交凭据。
+- **快捷键**：`Alt+←/→` 后退前进、`Ctrl+1/2` 切换入口、`Ctrl+Tab` 切标签、`Ctrl+W` 关标签、
+  `F5` 刷新；支持鼠标后退/前进侧键。
 - **设置 = 模态对话框**（CheckBox / Button，桌面控件）：自动登录、收起公告弹窗、清除缓存退出登录、
   清除账号（危险）、改用其他账号。
 - **记住窗口大小与位置**；窗口标题跟页面走（`页面标题 — 教务直达`）。
@@ -177,9 +185,9 @@ pwsh -File tools\preview-identity.ps1
 | 最大化 | 比对窗口矩形与工作区 | 底边曾比工作区低 108px → 去掉 `WindowStyle="None"` 后收敛到 13px（见「已知限制」） |
 | 无障碍树 | UI Automation 遍历 | `RadioButton 打开教务系统 / 打开 WebVPN`、三个窗口按钮、`Text 状态` 均在 |
 
-单测 70 项全绿（含 4 项宿主层真机用例，见下）；显示层改动不触碰 `Core/` 逻辑。
+单测 73 项全绿（含 7 项宿主层真机用例：导航 4 项 + 标签页 3 项，见下）；显示层改动不触碰 `Core/` 逻辑。
 
-### 宿主层用例（`EntryHostDomTests`，4 项）
+### 宿主层用例（`EntryHostDomTests` 导航 4 项 + `TabHostTests` 标签页 3 项）
 
 测的是**判据有没有被接上**（导航回调 → 状态机 → 宿主效果），不是判据本身——判据由
 `SuesTests` / `EntryFlowTests` 覆盖。做这一层的直接理由：Android 侧同一层查出了两个真实缺陷
@@ -207,6 +215,23 @@ dotnet test tests\CampusEntry.Tests\CampusEntry.Tests.csproj --filter 'FullyQual
 用例与断言：A3 的「门户没登录标记就不算到达 / 有标记才停手」、A2 的「非门户主机不填 / 门户主机才填」。
 **做过红测**：把 §6.1 的主机闸短路之后，「非门户主机不填」当场变红。
 
+### 标签页用例（`TabHostTests`，3 项）
+
+测的是**新开标签页那条接线**：站点点一个 `target="_blank"` 的链接 → 真的多出一个标签、切过去、
+原标签一动不动、切回来还在。基础设施与上面同源（STA + 离屏窗口 + 请求拦截），另加两点：
+
+- **点击必须走 CDP 的 `Input.dispatchMouseEvent`**：Chromium 只把**可信输入**算作用户手势，
+  脚本里直接 `window.open(...)` 会被弹窗拦截器挡掉，测出来的"没反应"是假象。
+- **新标签的拦截器要单独装**：每个标签是独立 `CoreWebView2`，`WebResourceRequested` 不共享。
+
+做这一层的理由写在这里：`EntryFlow.Adopt()`（「站点自开的页不劫持用户」）一直有单测、一直是绿的，
+但 PC 宿主**从来没调用过**它——判据对、接线断，单测抓不到。这正是 `TabHostTests` 覆盖的那一类。
+
+```powershell
+dotnet test tests\CampusEntry.Tests\CampusEntry.Tests.csproj --filter 'FullyQualifiedName~TabHostTests'
+```
+
+
 核验证据（`docs/screenshots/`，都是真实窗口的 `PrintWindow` 截图）：
 
 | 文件 | 拍的是什么 |
@@ -225,7 +250,8 @@ dotnet test tests\CampusEntry.Tests\CampusEntry.Tests.csproj --filter 'FullyQual
 
 ## 与 Android 端的已知差异（逻辑无关的形态差异）
 
-- 单窗口：站点 `window.open` / `target=_blank` 在当前窗口打开（保住返回栈）；Android 是标签页。
+- 站点新开页是**真标签页**（各自一份 WebView2 与状态机），不是把当前页顶掉；Android 也是标签页，
+  语义一致。差别只在形态：PC 的标签栏只有站点开页时出现（没有「新建标签页」按钮），上限 8 个。
 - PC（桌面 UA）上滑块是独立文档、手机端与表单同页——两种形态 CORE-SPEC §5.1 都覆盖。
 - WebView2 无 console 事件（本 SDK），公告弹窗后续收起动作不逐条进 run.log（初始执行结果有日志）；
   需要细查时用 `--remote-debugging-port`（debug 构建未开，需要时再加）。

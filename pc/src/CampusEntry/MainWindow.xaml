@@ -62,6 +62,7 @@
                 <RowDefinition Height="36"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -170,8 +171,23 @@
                 </DockPanel>
             </Border>
 
+            <!-- ================================================ 标签栏 -->
+            <!--
+                站点用 window.open / target=_blank 开的页面，每个占一个真标签页（各自一份 WebView2）。
+                只有一个标签时整条收起，不占那 34 DIP——单页浏览时它就是不该存在的东西。
+                切换标签只改可见性、**不导航**，所以切回来还是原来那一页（见 TabHost）。
+            -->
+            <Border x:Name="TabStripHost" Grid.Row="2" Background="{StaticResource Brush.Surface}"
+                    BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1"
+                    Visibility="Collapsed">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                              PanningMode="HorizontalOnly">
+                    <StackPanel x:Name="TabStrip" Orientation="Horizontal" Height="34"/>
+                </ScrollViewer>
+            </Border>
+
             <!-- ================================================ 首次运行横幅（可关闭，保存成功后不再出现） -->
-            <Border x:Name="FirstRunBanner" Grid.Row="2" Background="{StaticResource Brush.Neutral}"
+            <Border x:Name="FirstRunBanner" Grid.Row="3" Background="{StaticResource Brush.Neutral}"
                     BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1"
                     Padding="14,9" Visibility="Collapsed">
                 <DockPanel LastChildFill="True">
@@ -193,10 +209,8 @@
                 </DockPanel>
             </Border>
 
-            <!-- ================================================ 内容区：整页就是站点 -->
-            <Grid Grid.Row="3">
-                <ContentControl x:Name="WebHost"/>
-            </Grid>
+            <!-- ================================================ 内容区：每个标签一份 WebView2，只显示前台那个 -->
+            <Grid Grid.Row="4" x:Name="WebHost"/>
         </Grid>
     </Border>
 </Window>

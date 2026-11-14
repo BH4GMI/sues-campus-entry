@@ -77,9 +77,9 @@ swift test --package-path macos
 1. 若 `../shared/js/*.js` 存在，将其同步至 `Sources/CampusEntryCore/Resources/js/`；
 2. 执行 `swift build -c release` 编译发布版二进制与 SwiftPM 资源包（`*.bundle`）；
 3. 调用 `scripts/generate-icon.swift` 渲染 `#2F6FB5` 圆角方形底板与白色折纸矢量图标并生成 `CampusEntry.icns`；
-4. 组装 `dist/CampusEntry.app`（写入 `Info.plist`：`CFBundleDisplayName` 为 `教务直达`，`CFBundleIdentifier` 为 `cn.edu.sues.campus-entry`，`CFBundleShortVersionString` 为 `1.0.0`，`LSMinimumSystemVersion` 为 `13.0`，开启 `NSHighResolutionCapable` 及严格的 `NSAppTransportSecurity` 默认策略）；
+4. 组装 `dist/CampusEntry.app`（写入 `Info.plist`：`CFBundleDisplayName` 为 `教务直达`，`CFBundleIdentifier` 为 `cn.edu.sues.campus-entry`，`CFBundleShortVersionString` 为 `1.1.0`，`LSMinimumSystemVersion` 为 `13.0`，开启 `NSHighResolutionCapable` 及严格的 `NSAppTransportSecurity` 默认策略）；
 5. 使用 `codesign --deep --force -s -` 进行本地 ad-hoc 签名并校验；
-6. 使用 `hdiutil create` 生成带 `Applications` 快捷方式的 `dist/CampusEntry-1.0.0-macOS.dmg`。
+6. 使用 `hdiutil create` 生成带 `Applications` 快捷方式的 `dist/CampusEntry-1.1.0-macOS.dmg`。
 
 ## CI 与发布
 

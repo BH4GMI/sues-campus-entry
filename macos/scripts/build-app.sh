@@ -15,7 +15,7 @@ RESOURCES_JS_DIR="${MACOS_DIR}/Sources/CampusEntryCore/Resources/js"
 
 DIST_DIR="${MACOS_DIR}/dist"
 APP_NAME="CampusEntry"
-VERSION="1.0.0"
+VERSION="1.1.0"
 APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
 CONTENTS_DIR="${APP_BUNDLE}/Contents"
 MACOS_BIN_DIR="${CONTENTS_DIR}/MacOS"
@@ -93,9 +93,9 @@ cat > "${CONTENTS_DIR}/Info.plist" <<'PLIST'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.1.0</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>2</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>
