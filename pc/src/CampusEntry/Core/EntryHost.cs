@@ -31,7 +31,11 @@ public enum NoticeKind { None, Retry, UndoSave, ClearAccount }
 /// <summary>
 /// WebView2 宿主：驱动导航状态机、维护界面要显示的状态。与 Android 端 <c>EntryHost.kt</c>
 /// 逐条对应（同一份 <c>docs/CORE-SPEC.md</c>）；差别只在传输层——页面回调走
-/// <c>chrome.webview.postMessage</c>（见 <see cref="ScriptBag.EntryShim"/>），单窗口无标签页。
+/// <c>chrome.webview.postMessage</c>（见 <see cref="ScriptBag.EntryShim"/>）。
+/// <para>
+/// 一个实例只管**一个标签页**（Android 里是 <c>Tab</c>）：WebView2、状态机、计时器都是实例字段。
+/// 「哪个标签是前台」「站点新开页怎么交接」在 <see cref="TabHost"/>。
+/// </para>
 /// </summary>
 public sealed class EntryHost : IDisposable
 {
@@ -57,6 +61,27 @@ public sealed class EntryHost : IDisposable
 
     public Microsoft.Web.WebView2.Wpf.WebView2 View { get; } = new();
     private Microsoft.Web.WebView2.Core.CoreWebView2 Core => View.CoreWebView2;
+
+    /// <summary>就绪后的实例；未就绪时为 <c>null</c>。标签宿主用它把站点的新窗口请求递交过去。</summary>
+    public Microsoft.Web.WebView2.Core.CoreWebView2? CoreOrNull => View.CoreWebView2;
+
+    private readonly TaskCompletionSource<Microsoft.Web.WebView2.Core.CoreWebView2> coreReady =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    /// 等到 <see cref="CoreOrNull"/> 可用。初始化失败时以「已取消」结束——调用方据此放弃这个标签，
+    /// 不会因为一个坏标签把整窗口拖垮。
+    /// </summary>
+    public Task<Microsoft.Web.WebView2.Core.CoreWebView2> CoreReady => coreReady.Task;
+
+    /// <summary>
+    /// 站点要新开标签页（<c>window.open</c> / <c>target="_blank"</c>）时由标签宿主接管；
+    /// 返回 true 表示已处理，返回 false（例如标签数已满）时退回「并进当前标签」。
+    /// </summary>
+    public Func<Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs, bool>? NewWindowHandler;
+
+    /// <summary>这个标签当前不在前台：只跟随状态，不主动动作。</summary>
+    public bool Paused => paused;
 
     public EntryFlow Flow { get; } = new();
 
@@ -86,6 +111,7 @@ public sealed class EntryHost : IDisposable
     // ---------------------------------------------------------------- 本次流程的运行时状态（对齐 Android 的 Tab 字段）
 
     private bool autoStopped;
+    private bool paused;
     private string lastPrompt = "";
     private DispatcherTimer? probeTick;
     private DispatcherTimer? transientTick;
@@ -122,6 +148,7 @@ public sealed class EntryHost : IDisposable
             if (e.IsSuccess)
             {
                 OnCoreReady();
+                coreReady.TrySetResult(View.CoreWebView2);
             }
             else
             {
@@ -129,6 +156,7 @@ public sealed class EntryHost : IDisposable
                 // 而是运行时装上了却起不来。之前只写日志，用户看到的是一个空白窗口且没有任何出口。
                 var reason = e.InitializationException?.Message ?? "未知原因";
                 Log($"WebView2 初始化失败：{reason}");
+                coreReady.TrySetCanceled();
                 InitializationFailed?.Invoke(reason);
             }
         };
@@ -200,11 +228,14 @@ public sealed class EntryHost : IDisposable
         };
         Core.NewWindowRequested += (_, e) =>
         {
-            // 站点用 window.open / target=_blank 新开页面：在当前窗口里打开，保住返回栈。
-            // PC 端按 pc/README 的清单就是单窗口；教务系统的新开页在当前页继续浏览。
+            // 站点用 window.open / target=_blank 新开页面：交给标签宿主开一个**真标签页**，
+            // 于是当前页原样留着，用户能来回切（对齐 Android 的 onCreateWindow）。
+            if (NewWindowHandler?.Invoke(e) == true) return;
+
+            // 没被接管（标签数到上限、或初始化失败）：退回单窗口行为，并进当前页，保住返回栈。
             e.Handled = true;
             if (!string.IsNullOrEmpty(e.Uri)) Core.Navigate(e.Uri);
-            Log($"站点新开窗口 → 当前窗口打开 {e.Uri}");
+            Log($"站点新开窗口 → 当前标签打开 {e.Uri}");
         };
         Core.DocumentTitleChanged += (_, _) =>
         {
@@ -244,6 +275,69 @@ public sealed class EntryHost : IDisposable
 
     /// <summary>窗口标题跟页面走。</summary>
     public event Action<string>? ViewTitleChanged;
+
+    /// <summary>
+    /// 切到别的标签：停掉这一页的自动化，只留页面本身。
+    /// <para>
+    /// 与 Android 的 `onPause` 同一个意思（那里按 App 级对所有标签统一停）。不这么做的话，
+    /// 用户在 A 标签看资料，B 标签还在后台替他提交凭据、拖滑块——不可预期，也和「停手」冲突。
+    /// </para>
+    /// </summary>
+    public void PauseAutomation()
+    {
+        if (paused) return;
+        paused = true;
+        StopProbeTimer();
+        CancelTransient();
+        CancelArmed();
+        EvalQuietly("切走标签：停滑块监视器", ScriptBag.CaptchaStop);
+        EvalQuietly("切走标签：停凭据监视器", ScriptBag.CredentialStop);
+        Log("标签切走：已停本标签的自动化");
+    }
+
+    /// <summary>
+    /// 切回这个标签：恢复自动化。只有当页确实是学校认证页时才重装监视器——
+    /// 与「回前台」同一套判断，判据用状态机认过的那份 URL。
+    /// </summary>
+    public void ResumeAutomation()
+    {
+        if (!paused) return;
+        paused = false;
+        var core = CoreOrNull;
+        if (core == null || !Sues.IsCredentialPage(core.Source))
+        {
+            Log("标签切回：这一页不是认证页，不装监视器");
+            return;
+        }
+        EvalQuietly("切回标签：装滑块监视器", ScriptBag.CaptchaWatch);
+        if (SaveAccount) EvalQuietly("切回标签：装凭据监视器", ScriptBag.CredentialWatch);
+        Log("标签切回：已恢复自动化");
+    }
+
+    /// <summary>把站点自开页的导航并进这个标签（标签宿主接不住时的兜底）。</summary>
+    public void NavigateTo(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return;
+        Core.Navigate(url);
+    }
+
+    /// <summary>
+    /// 只同步内存里的偏好，不写盘、不弹状态行：多标签时由标签宿主统一落盘一次。
+    /// </summary>
+    public void AdoptSettings(bool saveAccount, bool hideNotices)
+    {
+        SaveAccount = saveAccount;
+        HideNotices = hideNotices;
+        tweakedDoc = -1;
+        RaiseChanged();
+    }
+
+    /// <summary>本机凭据没了：把镜像状态一起清掉（多标签时由标签宿主广播）。</summary>
+    public void ForgetSavedUsername()
+    {
+        SavedUsername = null;
+        RaiseChanged();
+    }
 
     // ---------------------------------------------------------------- 界面动作
 
@@ -393,6 +487,22 @@ public sealed class EntryHost : IDisposable
 
     private void Run(EntryFlow.Action action)
     {
+        // 标签不在前台：只处理「用户刚提交完」的结果（保存/否定凭据），不主动开新的自动化。
+        // 用户切走之后还在后台替他提交凭据、拖滑块，是不可预期行为。
+        if (paused)
+        {
+            switch (action)
+            {
+                case EntryFlow.Action.Nothing:
+                case EntryFlow.Action.Settle:
+                case EntryFlow.Action.RejectCredentials:
+                    break;
+                default:
+                    Log($"标签不在前台，跳过动作 {action}");
+                    return;
+            }
+        }
+
         switch (action)
         {
             case EntryFlow.Action.Nothing:
@@ -681,6 +791,7 @@ public sealed class EntryHost : IDisposable
     private void OnArmed(bool armed, bool expectsSlide)
     {
         if (autoStopped) return;
+        if (paused) return;
         if (armed)
         {
             // armed=true 的含义就是「这一页的滑块归应用管」，两种文档形态都会到这里：
@@ -720,6 +831,7 @@ public sealed class EntryHost : IDisposable
 
     private void OnCaptcha(string background, string slider)
     {
+        if (paused) return;
         var id = background + "|" + slider;
         if (id == captchaLastId) return;
         captchaLastId = id;
@@ -1083,7 +1195,7 @@ public sealed class EntryHost : IDisposable
     private static string Truncate(string s, int n) => s.Length <= n ? s : s[..n];
 
     /// <summary>日志同时进调试输出与 run.log（用户报障时把这一个文件发过来就够）。</summary>
-    private static void Log(string message)
+    internal static void Log(string message)
     {
         var line = $"[{Tag}] {message}";
         System.Diagnostics.Debug.WriteLine(line);
