@@ -429,8 +429,14 @@ public final class EntryHost: NSObject, ObservableObject, WKNavigationDelegate, 
     }
 
     private func onForeground() {
-        guard !autoStopped, Sues.isCredentialPage(currentDocURL) else { return }
-        evalQuietly("回前台重装滑块监视器", ScriptBag.captchaWatch)
+        guard Sues.isCredentialPage(currentDocURL) else { return }
+        // 滑块：停手之后不再接管，这条闸只对滑块成立。
+        if !autoStopped {
+            evalQuietly("回前台重装滑块监视器", ScriptBag.captchaWatch)
+        }
+        // 凭据捕获必须独立于 autoStopped：密码错一次后用户改对再登的那次提交
+        // 正是要捕获的（CORE-SPEC §6.1「首登承诺」）。原先两者共用一道闸，
+        // 手动输错后切走再回来，监视器就再也不装回，那次提交被静默丢掉。
         if saveAccount {
             evalQuietly("回前台重装凭据监视器", ScriptBag.credentialWatch)
         }
@@ -697,6 +703,7 @@ public final class EntryHost: NSObject, ObservableObject, WKNavigationDelegate, 
             }
 
             let doc = self.flow.documentOrdinal
+            let pageURL = self.currentDocURL
             if self.filledDoc == doc { return }
 
             if !self.saveAccount {
@@ -720,7 +727,17 @@ public final class EntryHost: NSObject, ObservableObject, WKNavigationDelegate, 
             }
             defer { credential.clear() }
 
-            self.filledDoc = doc
+            // 读密钥库这一跳可能弹系统授权框、耗时不可控。回到主线程后必须重新确认
+            // 还是刚才那份文档，否则会把旧凭据填进用户已经跳过去的新页面。
+            // 同时重查 filledDoc：并发两次 assistCas 时由先到的一次把序号占住。
+            guard Sues.samePage(pageURL, self.currentDocURL),
+                  self.filledDoc != self.flow.documentOrdinal
+            else {
+                self.logger.log("等密钥库期间文档已变化或已填过，放弃本次自动提交")
+                return
+            }
+
+            self.filledDoc = self.flow.documentOrdinal
             self.autoSubmits += 1
             self.flow.onAutoSubmitted()
             self.showNotice(NoticeState(text: "正在自动填写账号…", kind: .info))

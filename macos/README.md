@@ -81,8 +81,39 @@ swift test --package-path macos
 5. 使用 `codesign --deep --force -s -` 进行本地 ad-hoc 签名并校验；
 6. 使用 `hdiutil create` 生成带 `Applications` 快捷方式的 `dist/CampusEntry-1.0.0-macOS.dmg`。
 
+## CI 与发布
+
+- `.github/workflows/macos.yml`：改动 `macos/**` 或 `shared/js/**` 时触发，依次跑 `swift test`、
+  `build-app.sh --universal`、`lipo -archs` 双架构断言、`codesign --verify`，并把 `.dmg` 作为
+  artifact 上传。**本机没有 macOS 时，这条流水线就是唯一的编译验证。**
+- `.github/workflows/release.yml`：推送 `v*` tag 时构建 macOS 包。若同名 release 已存在则追加
+  dmg，否则创建**草稿** release——APK / EXE 仍由维护者手工附上，避免发出只带一个平台的正式版。
+
+### 签名与分发边界
+
+- 当前是 **ad-hoc 签名**，不是 Developer ID，也没有公证。别人下载 DMG 后 Gatekeeper 会拦，
+  需要右键「打开」；被 quarantine 标记时可 `xattr -d com.apple.quarantine /Applications/教务直达.app`。
+- ad-hoc 签名的 designated requirement 是 cdhash，**每次重建都会变**：Keychain 里那条密钥可能
+  重新弹授权（系统弹窗，属预期）。要消除这一点，只能用固定的 Developer ID 证书签名。
+- 要正式分发，需要 Developer ID + `notarytool` 公证 + `stapler`。证书与 App Store Connect 凭据
+  **只放仓库 Actions secrets**，不要进仓库，也不要放在个人机器上代签——否则二进制的信任锚会变成
+  某个人的开发者账号。
+
 ## 与上游规范对齐
 
 - **`shared/js/`**：页面 DOM 探测、CAS 观测、自动填充、滑块拖动与公告关闭脚本均直接复用仓库根目录 `shared/js/` 契约；`build-app.sh` 构建前会自动执行同步。
-- **`docs/CORE-SPEC.md`**：`Sues`、`EntryFlow`、`SliderSolver`、`SliderDrag` 与 `CredentialStore` 严格实现核心规范中的 URL 前缀形状判据、状态迁移、设备几何换算公式及凭据落盘格式，并由 `CampusEntryCoreTests` 验证全部等价测试向量。
+- **`docs/CORE-SPEC.md`**：`Sues`、`EntryFlow`、`SliderSolver`、`SliderDrag` 与 `CredentialStore` 严格实现核心规范中的 URL 前缀形状判据、状态迁移、设备几何换算公式及凭据落盘格式。`CampusEntryCoreTests` 覆盖 §7 的判据、解析与几何向量；**尚未覆盖**页面级（DOM）向量与滑块真值图像语料，见下文「已知缺口」。
 - **`DESIGN.md`**：界面颜色令牌（主色 `#2F6FB5` / 深色模式 `#5B9BD5`、状态色、幽灵按钮状态层）、工具栏尺寸与品牌折纸图标几何比例均与 `DESIGN.md` 对齐。
+
+## 已知缺口
+
+以下三项是 2026-11 评审确认的覆盖缺口，不是"待办清单"里的可选项——`docs/CORE-SPEC.md` 都点过名：
+
+1. **宿主层零自动化用例。** `EntryHost` 里的"≤2 次自动提交""≤3 次拖动""20 s / 15 s 超时"
+   "待判决归因""`about:blank` 记账"全靠人工验证。PC / Android 各有 4 项真机宿主用例，
+   macOS 还没有；§4.0 记录的那个"自动登录偶发静默失效"正是宿主测试才查出来的。
+2. **滑块只有合成用例。** 合成图里模板就是背景的裁剪，`TM_CCORR_NORMED` 与 `TM_CCOEFF_NORMED`
+   给出同一答案——把度量改错，现有 7 条用例仍会全绿。§5.2 要求用真值语料回归。
+3. **没有页面级（DOM）用例。** `armed` 门禁、`<div>` 嵌套不截断、`<br>` 不算嵌套、
+   HTML 实体解码这几条只在 Android 的 `PageDomTest` 里被钉住；macOS 的 `shared/js` 副本
+   目前只有"文件在、占位符都替换了"的完整性测试。

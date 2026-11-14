@@ -1,9 +1,9 @@
 # 教务直达（CampusEntry）
 
-上海工程技术大学教务系统与 WebVPN 门户的快捷入口，提供 Windows 与 Android 两端实现。
+上海工程技术大学教务系统与 WebVPN 门户的快捷入口，提供 Windows、Android 与 macOS 三端实现。
 应用只做两件事：打开系统，并在用户同意后自动完成登录；不导入任何数据。
 
-应用显示名为「教务直达」，两端一致；磁盘与工程上的标识（可执行文件名、命名空间、数据目录、
+应用显示名为「教务直达」，各端一致；磁盘与工程上的标识（可执行文件名、命名空间、数据目录、
 工程名）保持 `CampusEntry` 不变。这是个人项目，界面不使用校徽、校名与印章。
 
 ## 功能
@@ -38,8 +38,9 @@ android/                 Android 端源码、测试与工具
 macos/                   macOS 端源码、测试与打包脚本
 ```
 
-页面契约脚本不复制：Android 以 `assets.srcDir` 打包、Windows 以内嵌资源链接，
-改一处两端同时变。
+页面契约脚本只有 `shared/js/` 这一份：Android 以 `assets.srcDir` 打包、Windows 以内嵌资源链接、
+macOS 在打包前由 `scripts/build-app.sh` 同步进包内（包内副本是构建产物，源仍以 `shared/js/` 为准）。
+改一处三端同时变。
 
 ## 文档
 
@@ -48,7 +49,7 @@ macos/                   macOS 端源码、测试与打包脚本
 | `docs/PROTOCOL.md` | 实测的登录链路：网关地址与编码、SSO 支点、门户资源接口、会话特性、认证页要素。改动任何一端前先读它 |
 | `docs/CORE-SPEC.md` | 跨端共用的纯逻辑：落点规则、页面身份判据、停手规则、滑块算法与等价测试向量 |
 | `docs/APP-UX.md` | 页面逻辑、交互流程、凭据生命周期与安全边界；§9 分期与验证矩阵，§10 已修缺陷 |
-| `DESIGN.md` | 两端视觉 token（颜色 / 字体 / 间距 / 圆角 / 组件），可用 `designmd lint` 校验 |
+| `DESIGN.md` | 各端视觉 token（颜色 / 字体 / 间距 / 圆角 / 组件），可用 `designmd lint` 校验 |
 | `pc/README.md` | Windows 端的实现说明、实测记录与已知限制 |
 
 ## 构建与测试
@@ -115,11 +116,11 @@ swift test                  # 58 项核心单测（7 个测试套件）
 | --- | --- | --- | --- |
 | 判据与状态机（`Sues` / `EntryFlow`） | 单测 70 项 | 单测 73 项 | 单测 58 项（含图像非预乘解码） |
 | 页面脚本的 DOM 层（`shared/js`） | 经宿主层用例间接覆盖 | 真机 WebView 8 项（含 `<div>` / `<br>` / `&amp;` 向量） | 脚本资源完整性单测 |
-| 宿主层接线（`EntryHost`） | 真机 WebView2 4 项 | 真机 WebView 4 项 | 启动与冷态运行验证（真实 CAS 链路待校网联调） |
+| 宿主层接线（`EntryHost`） | 真机 WebView2 4 项 | 真机 WebView 4 项 | CI：`swift test` + 通用二进制打包 + `lipo` 双架构断言（宿主层用例待补） |
 | 平台存储（DPAPI / AndroidKeyStore / Keychain） | 单测 | 真机 8 项 | 单测（核心帧格式） |
 
 宿主层用例测的是「判据有没有被接上」，而不是判据本身——判据与状态机全对、只有接线错时，
-单测抓不到。两端的宿主层用例都做过红测：短路对应的闸门后，用例当场失败。
+单测抓不到。PC 与 Android 的宿主层用例都做过红测：短路对应的闸门后，用例当场失败。
 
 Windows 宿主层用例的运行约束：WebView2 需要 STA 线程与消息泵，用例在一条 STA 线程上创建
 `Dispatcher` 与离屏窗口；页面通过 `WebResourceRequested` 拦截，使用真实 URL 与本地伪造响应，
