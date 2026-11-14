@@ -5,6 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MACOS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${MACOS_DIR}/.." && pwd)"
 
+ARCH_ARGS=()
+if [ "${1:-}" = "--universal" ]; then
+    ARCH_ARGS=(--arch arm64 --arch x86_64)
+fi
+
 SHARED_JS_DIR="${REPO_ROOT}/shared/js"
 RESOURCES_JS_DIR="${MACOS_DIR}/Sources/CampusEntryCore/Resources/js"
 
@@ -36,8 +41,8 @@ else
 fi
 
 echo "==> [2/6] Building release binary..."
-swift build -c release --package-path "${MACOS_DIR}"
-BIN_DIR="$(swift build -c release --package-path "${MACOS_DIR}" --show-bin-path)"
+swift build -c release --package-path "${MACOS_DIR}" ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"}
+BIN_DIR="$(swift build -c release --package-path "${MACOS_DIR}" ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} --show-bin-path)"
 EXECUTABLE_PATH="${BIN_DIR}/${APP_NAME}"
 
 if [ ! -x "${EXECUTABLE_PATH}" ]; then
