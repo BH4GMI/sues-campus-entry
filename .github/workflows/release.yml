@@ -1,0 +1,55 @@
+name: release
+
+# 打 tag 时产出 macOS 包。默认建**草稿** release：APK / EXE 仍由维护者手工附上，
+# 避免出现"只带一个平台"的半成品正式版。
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish-macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 选择带 Swift 6 的工具链
+        run: |
+          if swift --version | grep -q "Swift version 6"; then
+            swift --version
+            exit 0
+          fi
+          newest="$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)"
+          if [ -z "${newest}" ]; then
+            echo "找不到 Xcode 16+，无法运行 Swift Testing 用例" >&2
+            exit 1
+          fi
+          sudo xcode-select -s "${newest}"
+          swift --version
+
+      # 发版前必须过测试：这个 tag 一旦被下载，就没有"回滚"的余地。
+      - name: 单元测试
+        run: swift test --package-path macos
+
+      - name: 打包通用二进制
+        run: ./macos/scripts/build-app.sh --universal
+
+      - name: 断言产物是 arm64 + x86_64
+        run: |
+          bin="macos/dist/CampusEntry.app/Contents/MacOS/CampusEntry"
+          test -x "${bin}"
+          lipo -archs "${bin}" | grep -q arm64
+          lipo -archs "${bin}" | grep -q x86_64
+
+      - name: 附到 release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" macos/dist/CampusEntry-*.dmg --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" macos/dist/CampusEntry-*.dmg \
+              --draft --title "教务直达 ${GITHUB_REF_NAME}" --generate-notes
+          fi

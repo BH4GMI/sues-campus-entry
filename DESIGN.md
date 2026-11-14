@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: 教务直达
-description: 教务直达（Android / PC 两端）的设计系统。安静的墨蓝、克制的层级、一句话说得清的状态。
+description: 教务直达（Android / PC / macOS 各端）的设计系统。安静的墨蓝、克制的层级、一句话说得清的状态。
 colors:
   primary: "#2F6FB5"
   primary-deep: "#24548A"
@@ -221,7 +221,7 @@ components:
 | 标识名 | **CampusEntry** | exe 文件名、命名空间、程序集名、资源逻辑名、数据目录 |
 | 协议前缀 | **campus-entry** | 注入脚本与宿主之间的日志前缀（见下） |
 
-**持久化键永远不跟着显示名改。** 改 `%LOCALAPPDATA%\CampusEntry\`，用户机器上已保存的账号就读不到了，他们看到的是"突然要我重新登录"——像登录坏了，实际是数据被另起炉灶。所以改名只动显示层。两端各自的位置写在 `EntrySettings.cs`、`MainActivity.kt` 的注释里。
+**持久化键永远不跟着显示名改。** 改 `%LOCALAPPDATA%\CampusEntry\`，用户机器上已保存的账号就读不到了，他们看到的是"突然要我重新登录"——像登录坏了，实际是数据被另起炉灶。所以改名只动显示层。各端各自的位置写在 `EntrySettings.cs`、`MainActivity.kt`、`EntrySettings.swift` 的注释里。
 
 **协议字符串同理。** `shared/js/notice-dialog.js` 的 `LOG` 前缀与 Android `EntryHost.onConsoleMessage` 的前缀判据必须**逐字一致**，它是一条跨端契约，不是文案。
 
@@ -261,10 +261,11 @@ components:
 
 ## Layout
 
-本设计系统面向两端，`px` 数值的落地映射为：
+本设计系统面向各端，`px` 数值的落地映射为：
 
 - Android / Jetpack Compose：`spacing` 与 `rounded` 的 `px` → **dp**（`20px` → `20.dp`）；`typography.fontSize` 的 `px` → **sp**（`16px` → `16.sp`）；`lineHeight` 的无单位倍数 → `.em`。
 - Windows / WPF：`spacing` 与 `rounded` 的 `px` → **DIP**（`16px` → `16`，WPF 无单位即设备无关像素）；**但 `typography.fontSize` 不得直接沿用**，必须换用下方「落到 PC 时」那一档桌面字号。
+- macOS / AppKit：`spacing` 与 `rounded` 的 `px` → **pt**（1:1）；字号与 Windows 同档，走「落到 PC 时」的桌面字号（`Theme.Typography`：`title` 15 / `body` 13 / `caption` 12）。
 - 间距走 **4px 基准的 8px 节奏**（4 / 8 / 12 / 16 / 20 / 24 / 32）。
 - 页面左右安全边距统一 `spacing.2xl` (24px)；卡片内部 `spacing.xl` (20px)。
 - **触控目标不小于 `spacing.touch` (48px)**，视觉尺寸可以更小，但可点区域必须补足。

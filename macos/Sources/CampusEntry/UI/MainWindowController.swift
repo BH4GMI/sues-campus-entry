@@ -425,17 +425,10 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
                     self.host.reload()
                     return nil
                 }
-                // Cmd+Left -> Back, Cmd+Right -> Forward
-                if flags == .command {
-                    if event.keyCode == 123 {
-                        self.host.goBack()
-                        return nil
-                    }
-                    if event.keyCode == 124 {
-                        self.host.goForward()
-                        return nil
-                    }
-                }
+                // 刻意不接管 Cmd+Left / Cmd+Right：它们同时是 Cocoa 文本系统的
+                // 「移到行首 / 行尾」。本地监视器在事件派发前拦截，用户在登录页的
+                // #username / #password 里按这两下会被当成前进后退，整页被换掉。
+                // 后退/前进已经有菜单快捷键 Cmd+[ / Cmd+]（AppDelegate 负责）。
             }
 
             return event
