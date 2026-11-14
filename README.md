@@ -17,23 +17,25 @@
   5 次锁定账号，应用不重试。判定规则见 `docs/CORE-SPEC.md` §6。
 - 另含滑块验证码自动拖动、「密码已过期」页自动跳过、教务系统首屏公告弹窗按开关收起。
 
-## 两端
+## 各端实现
 
 | 端 | 技术 | 目录 | 状态 |
 | --- | --- | --- | --- |
 | Windows | C# / .NET 8 / WPF / WebView2 | `pc/` | 已实现，真实链路实测通过，见 `pc/README.md` |
 | Android | Kotlin / Compose / WebView | `android/` | 已实现，单测 73 项、真机仪表测试 20 项通过 |
+| macOS | Swift / AppKit / WKWebView | `macos/` | 已实现，单测 58 项通过、支持本地构建 `.app` / `.dmg`，见 `macos/README.md` |
 
 ## 仓库结构
 
 ```
 LICENSE                  MIT 许可全文
 THIRD-PARTY-NOTICES.md   二进制产物中第三方组件的许可
-shared/js/               两端共用的页面契约脚本（物理上只有这一份）
+shared/js/               各端共用的页面契约脚本（物理上只有这一份）
 docs/                    跨端契约与实测记录
-DESIGN.md                两端视觉 token 的唯一来源
+DESIGN.md                各端视觉 token 的唯一来源
 pc/                      Windows 端源码、测试与工具
 android/                 Android 端源码、测试与工具
+macos/                   macOS 端源码、测试与打包脚本
 ```
 
 页面契约脚本不复制：Android 以 `assets.srcDir` 打包、Windows 以内嵌资源链接，
@@ -96,14 +98,25 @@ adb shell am instrument -w app.webvpn.entry.test/androidx.test.runner.AndroidJUn
 ./gradlew :app:assembleReleaseAndroidTest -PtestBuildType=release
 ```
 
+### macOS
+
+- **系统与芯片**：支持 macOS 13.0+，原生兼容 Apple Silicon（`arm64`）与 Intel（`x86_64`）。
+- **依赖安装**：无需第三方包，仅需安装 Xcode Command Line Tools（`xcode-select --install`）或 Xcode。
+
+```bash
+cd macos
+swift test                  # 58 项核心单测（7 个测试套件）
+./scripts/build-app.sh      # 同步 shared/js、编译 Release 并打包 .app 与 .dmg
+```
+
 ## 测试覆盖的分层
 
-| 层 | Windows | Android |
-| --- | --- | --- |
-| 判据与状态机（`Sues` / `EntryFlow`） | 单测 70 项 | 单测 73 项 |
-| 页面脚本的 DOM 层（`shared/js`） | 经宿主层用例间接覆盖 | 真机 WebView 8 项（含 `<div>` / `<br>` / `&amp;` 向量） |
-| 宿主层接线（`EntryHost`） | 真机 WebView2 4 项 | 真机 WebView 4 项 |
-| 平台存储（DPAPI / AndroidKeyStore） | 单测 | 真机 8 项 |
+| 层 | Windows | Android | macOS |
+| --- | --- | --- | --- |
+| 判据与状态机（`Sues` / `EntryFlow`） | 单测 70 项 | 单测 73 项 | 单测 58 项（含图像非预乘解码） |
+| 页面脚本的 DOM 层（`shared/js`） | 经宿主层用例间接覆盖 | 真机 WebView 8 项（含 `<div>` / `<br>` / `&amp;` 向量） | 脚本资源完整性单测 |
+| 宿主层接线（`EntryHost`） | 真机 WebView2 4 项 | 真机 WebView 4 项 | 启动与冷态运行验证（真实 CAS 链路待校网联调） |
+| 平台存储（DPAPI / AndroidKeyStore / Keychain） | 单测 | 真机 8 项 | 单测（核心帧格式） |
 
 宿主层用例测的是「判据有没有被接上」，而不是判据本身——判据与状态机全对、只有接线错时，
 单测抓不到。两端的宿主层用例都做过红测：短路对应的闸门后，用例当场失败。

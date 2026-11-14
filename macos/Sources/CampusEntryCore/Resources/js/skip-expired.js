@@ -1,0 +1,1 @@
+(function(){try{var els=document.querySelectorAll('input.login_btn,button.login_btn,input[type=button],button,a');for(var i=0;i<els.length;i++){var e=els[i];var text=(e.value||'')+' '+(e.innerText||e.textContent||'');if(text.indexOf('点击跳过')>=0&&e.offsetParent!==null){e.click();return 'clicked|'+e.tagName;}}location.reload();return 'reloaded';}catch(e){return 'err|'+e;}})()
